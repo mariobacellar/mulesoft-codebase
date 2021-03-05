@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:mongo="http://www.mulesoft.org/schema/mule/mongo"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/mongo http://www.mulesoft.org/schema/mule/mongo/current/mule-mongo.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<file:config name="File_Config" doc:name="File Config" doc:id="c36fac00-af29-4850-9436-6d68fe3010db" >
+		<file:connection workingDir="/home/mario/app/AnypointStudio/studio-workspace/useercorp/src/main/resources/files/uploaded" />
+	</file:config>
+	<mongo:config name="MongoDB_Config" doc:name="MongoDB Config" doc:id="872bf374-6b4a-47ad-bf0b-23e2417cae0b" >
+		<mongo:connection-string-connection connectionString="mongodb+srv://admin:admin@cluster0.rv6nl.mongodb.net/mule?retryWrites=true&amp;w=majority" />
+	</mongo:config>
+	<http:request-config name="HTTP_Request_Slack" doc:name="HTTP Request configuration" doc:id="c0198bd4-65a2-44c3-a7ed-3336590c5e6a" >
+		<http:request-connection host="hooks.slack.com" />
+	</http:request-config>
+	<flow name="usercorp-schedulerFlow" doc:id="983dc178-ddce-46a3-b6d0-759d7315a8e9" initialState="started">
+		<scheduler doc:name="Scheduler" doc:id="e16b88d5-e7c4-492b-b210-f88ff7377bef" >
+			<scheduling-strategy >
+				<fixed-frequency />
+			</scheduling-strategy>
+		</scheduler>
+		<file:list doc:name="List" doc:id="9dd99948-57b5-4c72-9aaa-1c3e1e694a20" config-ref="File_Config" directoryPath="/home/mario/app/AnypointStudio/studio-workspace/useercorp/src/main/resources/files/uploaded"/>
+		<ee:transform doc:name="Transform Message" doc:id="fa4f5f36-1e8b-44e7-a299-23f95a0724f0">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+payload.attributes.path
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<set-variable value="#[payload]" doc:name="myListFiles" doc:id="8aae04f7-b74f-441b-b0cf-acce51b032b0" variableName="myListFiles" />
+		<set-variable value="#[[]]" doc:name="myUsersXML" doc:id="02406256-150e-400b-a33f-0767befaaed2" variableName="myUsersXML" />
+		<set-variable value="#[[]]" doc:name="myUsersCSV" doc:id="f5a8cf9c-579e-445f-9150-997408aad374" variableName="myUsersCSV" />
+		<set-variable value='#[""]' doc:name="myCurrFileName" doc:id="c5807f7e-c102-4915-ae41-df05a8b0ee4a" variableName="myCurrFileName" />
+		<set-variable value="#[[]]" doc:name="myFailures" doc:id="8a1000ee-47d6-44a2-8860-660d040c9b2f" variableName="myFailures" />
+		<set-variable value="#[[]]" doc:name="myFilesContents" doc:id="dc686714-5398-471a-bb8d-3585828a3047" variableName="myFilesContents" />
+		<foreach doc:name="For Each" doc:id="6d1a7169-610d-4977-9114-c0822992b4ad" collection="vars.myListFiles">
+			<try doc:name="Try" doc:id="9ac126e1-dd6f-4f14-b6f8-6cdb4f83666b" >
+				<error-handler doc:id="120bba96-67aa-41ae-8fe4-558788d83c3f" >
+					<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="ca5e3af2-6773-4e96-996d-28afb62e1750" >
+						<set-variable value='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  "msg": "Arquivo corrompido: " ++ vars.myCurrFileName&#10;}]' doc:name="myTmpPayload" doc:id="2f6605dc-751d-44c8-b55f-a29d7ececc28" variableName="myTmpPayload" />
+						<set-variable value="#[%dw 2.0&#10;output application/json&#10;---&#10;vars.myFailures + vars.myTmpPayload]" doc:name="myFailures" doc:id="e166df89-e189-4249-a0fe-cbf1ea057717" variableName="myFailures" />
+					</on-error-continue>
+				</error-handler>
+				<set-variable value="#[payload]" doc:name="myCurrFileName" doc:id="51dfe91c-6e62-439f-860c-4664da12a8b1" variableName="myCurrFileName" />
+				<file:read doc:name="Read" doc:id="5c79c4ef-1240-4ea2-9f9a-d4221d4fd8e5" config-ref="File_Config" path="#[payload]" >
+					<repeatable-in-memory-stream />
+				</file:read>
+				<set-variable value='""' doc:name="myMediaType Init" doc:id="da1b83fb-cf5f-4a1d-8530-8c7ad3099b31" variableName="myMediaType"/>
+				<set-variable value="#[%dw 2.0&#10;output application/java&#10;---&#10;payload.^mediaType]" doc:name="myMediaType" doc:id="e2468d95-2efa-42a4-8daa-946df1f058f1" variableName="myMediaType" />
+				<set-variable value="#[%dw 2.0&#10;output application/java&#10;var tmpMediaType = vars.myMediaType splitBy (';')&#10;---&#10;vars.myMediaType contains('text\/csv')&#10;&#10;// Funciona ok &#10;//vars.myMediaType startsWith(&quot;text/csv&quot;)&#10;&#10;// Funciona ok &#10;// (tmpMediaType find &quot;text/csv&quot;) == 0]" doc:name="isCSV" doc:id="477c3c19-1863-4e81-8044-ff746131c804" variableName="isCSV" />
+				<set-variable value='#[%dw 2.0&#10;output application/java&#10;---&#10;vars.myMediaType startsWith("text/xml")]' doc:name="isXML" doc:id="510b8cbe-cfa2-47be-8d5c-70d75abca01f" variableName="isXML" />
+				<choice doc:name="Choice" doc:id="0a0332ed-2f04-48c7-ac3f-688c4c926878" >
+					<when expression="#[vars.isXML]" >
+						<ee:transform doc:name="Transform Message" doc:id="4d42dffb-1741-4fda-b7f0-1ec469e48514" >
+							<ee:message >
+								<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload.parts.myfile.content]]></ee:set-payload>
+							</ee:message>
+						</ee:transform>
+						<ee:transform doc:name="Transform Message" doc:id="e3fd09e2-f041-4321-8682-679f055909fc" >
+							<ee:message >
+								<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload.users.*user map (item,index) -> { 
+ "name": item.nome,
+ "email": item.email
+}
+]]></ee:set-payload>
+							</ee:message>
+						</ee:transform>
+						<set-variable value="#[%dw 2.0&#10;output application/json&#10;---&#10;vars.myUsersXML + payload]" doc:name="myUsersXML" doc:id="301d93a1-4a6f-4381-bd49-7f84480251d0" variableName="myUsersXML" />
+					</when>
+					<when expression="#[vars.isCSV]" >
+						<ee:transform doc:name="Transform Message" doc:id="ec1c9249-91a2-4ca2-bfc9-e1f81ab765e3" >
+							<ee:message >
+								<ee:set-payload ><![CDATA[output application/dw
+---
+payload]]></ee:set-payload>
+							</ee:message>
+						</ee:transform>
+						<ee:transform doc:name="Transform Message" doc:id="a470fe62-4796-4591-be87-d01d34f48c05" >
+							<ee:message >
+								<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map (item,index) -> { 
+	"index": index,
+	"name": item.nome,
+    "email": item.email
+}
+]]></ee:set-payload>
+							</ee:message>
+						</ee:transform>
+						<set-variable value="#[%dw 2.0&#10;output application/json&#10;---&#10;vars.myUsersCSV + payload]" doc:name="myUsersCSV" doc:id="b438f4cc-386e-4477-baa1-62a784dd547d" variableName="myUsersCSV" />
+					</when>
+					<otherwise >
+						<logger level="INFO" doc:name="Logger" doc:id="869b1de4-a8c6-4bd2-9da1-479df8f1ff88" message="### UNKNOWN FILE ###" />
+					</otherwise>
+				</choice>
+				<set-variable value="#[%dw 2.0&#10;output application/json&#10;import * from dw::core::Strings&#10;//var varr = payload flatMap(value, index) -&gt; value &#10;var temp = vars.myFilesContents + payload&#10;---&#10;temp flatMap(value, index) -&gt; value]" doc:name="myFilesContents" doc:id="e0b111fd-1576-47bb-8d29-c41821026989" variableName="myFilesContents" />
+			</try>
+		</foreach>
+		<ee:transform doc:name="Transform" doc:id="395a3a65-c1ec-4cbc-b000-32963e974936" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	ListOfFileNames: payload,
+	FilesSucess: vars.myFilesContents,
+	FilesCorrupted: vars.myFailures
+	 
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="Transform Message" doc:id="66a10adc-9b38-4f29-a95f-ef66cb6065cb" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+import * from dw::core::Strings
+var varr = payload.FilesSucess flatMap(value, index) -> value 
+output application/json
+---
+varr map() -> {
+    "name"    : $.name,
+    "email"   : $.email,
+    "username": if ($.username == null) (substringBefore($.email,"@")) else ($.username),
+    "phone"   : $.phone
+}   
+
+
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<try doc:name="Try" doc:id="4b3cffbe-aecb-4856-a286-d87003ab328f" >
+			<mongo:insert-document doc:name="Insert document" doc:id="184cfa80-852b-4e0d-b37a-296cd32b7057" config-ref="MongoDB_Config" collectionName="user"/>
+			<error-handler >
+				<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="9afb0b43-2617-4212-87da-6bc8d789a708" >
+					<logger level="INFO" doc:name="Logger" doc:id="2ca688ab-cb93-40ef-afea-2f89a296b0f5" message="#[payload]" />
+				</on-error-continue>
+			</error-handler>
+		</try>
+		<foreach doc:name="For Each Mve out and Slack" doc:id="08059c77-109c-48db-aef0-12a5444c3652" collection="#[vars.myListFiles]" >
+			<file:move doc:name="Move" doc:id="27204983-6123-4ea0-b17b-8b68f979f03d" config-ref="File_Config" sourcePath="#[payload]" targetPath="/home/mario/app/AnypointStudio/studio-workspace/useercorp/src/main/resources/files/done" overwrite="true" />
+			<ee:transform doc:name="Transform Message" doc:id="69e2c3cb-1243-45c5-8870-1f0a37a8698e" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+    "text": "Usuário inserido: " ++ payload
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<http:request method="POST" doc:name="Slack Request" doc:id="af06ea3e-c5a9-4c0c-ac52-113f2ebd69e1" config-ref="HTTP_Request_Slack" path="/services/T6CBCH4G4/B01N2KHRCH0/aciTkG02dhpz7DyakeuACAWB" outputMimeType="application/json" />
+		</foreach>
+	</flow>
+</mule>

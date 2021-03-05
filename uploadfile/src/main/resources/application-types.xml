@@ -1,0 +1,34 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<types:mule xmlns:types="http://www.mulesoft.org/schema/mule/types">
+  <types:catalog>
+    <types:type name="mycsvtype" format="excel">
+      <types:shape format="weave"><![CDATA[%dw 2.0
+
+type mycsvtype = {| Sheet1?: Array<{|  |}> |}
+
+]]></types:shape>
+    </types:type>
+    <types:type name="stringNotNull" format="java">
+      <types:shape format="raml"><![CDATA[#%RAML 1.0 DataType
+type: string]]></types:shape>
+    </types:type>
+  </types:catalog>
+  <types:enrichment select="#571f3713-723c-4bf1-830b-6cf6bfd7585b">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:variables>
+          <types:variable name="xfilenameIN" type="stringNotNull"/>
+        </types:variables>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#49b881f0-3caa-4a29-b3b7-1277cf03426d">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:variables>
+          <types:variable name="xfilenameIN" type="stringNotNull"/>
+        </types:variables>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+</types:mule>

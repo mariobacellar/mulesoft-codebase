@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="a2b5028c-1992-497f-b76f-a48292e068de" >
+		<http:listener-connection host="localhost" port="8081" />
+	</http:listener-config>
+	<flow name="MainFlow" doc:id="ad62d60d-43ea-4b9d-9b1e-e76a4732a35e" >
+		<http:listener doc:name="/GET firstproject" doc:id="733dee4e-3c5b-4df2-a70c-20b4c0903bcb" config-ref="HTTP_Listener_config" path="/firstproject"/>
+		<set-payload value="#[output application/java --- 
+'New invoice from customer ' ++ attributes.queryParams.name ++ '. Congratulations']" doc:name="Set Payload" doc:id="415f2376-7c80-4434-8d70-b430031ff41f" />
+		<logger level="INFO" doc:name="Logger" doc:id="0fcbb7b1-aa29-4442-b983-4308b580032e" message="[firstproject] - request received"/>
+	</flow>
+</mule>

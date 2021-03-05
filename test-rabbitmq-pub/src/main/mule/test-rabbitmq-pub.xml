@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:amqp="http://www.mulesoft.org/schema/mule/amqp" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/amqp http://www.mulesoft.org/schema/mule/amqp/current/mule-amqp.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="bd65439c-627a-48d6-ac15-d626c629fc73" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<amqp:config name="AMQP_Config" doc:name="AMQP Config" doc:id="2137a952-9e3c-4f02-9d5d-49716f329f97" >
+		<amqp:connection host="172.17.0.2" port="5672" username="guest" password="guest" />
+	</amqp:config>
+	<flow name="test-rabbitmq-pubFlow" doc:id="fa5fbd46-5db2-4861-86e6-76bd6d2148d4" >
+		<http:listener doc:name="Listener" doc:id="6ce3a3b8-6c7d-41ca-9e15-e85cf190ca6f" config-ref="HTTP_Listener_config" path="/rabbitmqpub" allowedMethods="POST"/>
+		<logger level="INFO" doc:name="Logger" doc:id="bf7ab346-f564-4d9c-9d68-9b6941d4cf7e" message="#[payload]"/>
+		<amqp:publish doc:name="Publish" doc:id="6787d751-b004-44d7-9b0e-2447d4d3554e" config-ref="AMQP_Config" exchangeName="amq.topic"/>
+		<set-payload value="Submit ok" doc:name="Set Payload" doc:id="9e66b63f-a76d-4908-b08c-06911253312d" />
+		<logger level="INFO" doc:name="Logger" doc:id="bd6ac87b-97cf-4fc4-a2e6-059827d79d04" message="#[payload]" />
+	</flow>
+</mule>

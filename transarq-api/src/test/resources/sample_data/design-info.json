@@ -1,0 +1,13 @@
+{
+  "sampleData": {
+    "65dee7a2-7b2d-4e35-9db4-cbe8700d8ffd": {
+      "vars-xArquivoNome": "sample_data/defaultnulltype.dwl",
+      "vars-xArquivoPrefixo": "sample_data/defaultstringtype.dwl",
+      "vars-xArquivoPasta": "sample_data/defaultstringtype_1.dwl"
+    },
+    "bd223153-9055-4fa8-a791-d770ebbdc222": {
+      "vars-xArquivoOrigem": "sample_data/defaultstringtype_2.dwl",
+      "vars-xArquivoTipo": "sample_data/defaultstringtype_3.dwl"
+    }
+  }
+}

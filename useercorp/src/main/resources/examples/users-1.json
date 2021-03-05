@@ -1,0 +1,27 @@
+[
+	{
+		"name": "Mario Bacellar 01",
+		"username": "Bret",
+		"email": "mario01@april.biz",
+		"phone": "1-770-736-8031 x56442",
+		"cpf": "243.075.692-70",
+		"expirationDate":  2021-12-31
+	},
+	{
+		"name": "Mario Bacellar 02",
+		"username": "Bret",
+		"email": "mario02@april.biz",
+		"phone": "1-770-736-8031 x56442",
+		"cpf": "127.810.670-75",
+		"expirationDate":  2021-12-31
+	},
+	{
+		"name": "Mario Bacellar 03",
+		"username": "Bret",
+		"email": "mario03@april.biz",
+		"phone": "1-770-736-8031 x56442",
+		"cpf": "654.278.772-06",
+		"expirationDate":  2021-12-31
+	}
+] 
+

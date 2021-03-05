@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
+	<file:config name="File_Config" doc:name="File Config" doc:id="7d0b109c-cadc-43b5-83c5-f276d99ae842" >
+		<file:connection workingDir="/home/mario/app/AnypointStudio/studio-workspace/arquivo-polling-distrito/file" />
+	</file:config>
+	<flow name="arquivo-polling-distritoFlow1" doc:id="c33e3f9a-eba2-4d99-ac5d-be98c999b6b9" >
+		<file:listener doc:name="Polling Distrito" doc:id="91bf6ff7-d46c-4e51-a1b8-54c11e510e1f" directory="/home/mario/app/AnypointStudio/studio-workspace/arquivo-polling-distrito/file/in" timeBetweenSizeCheckUnit="SECONDS" autoDelete="true" moveToDirectory="/home/mario/app/AnypointStudio/studio-workspace/arquivo-polling-distrito/file/out" renameTo='#["done_" ++ (now() as Date {format: "yyyyMMdd"})]' config-ref="File_Config">
+			<scheduling-strategy >
+				<fixed-frequency timeUnit="SECONDS"/>
+			</scheduling-strategy>
+		</file:listener>
+		<logger level="INFO" doc:name="Logger" doc:id="cf0aa5ee-b4a1-4d30-ac60-25757b60b1df" />
+	</flow>
+</mule>

@@ -1,0 +1,250 @@
+#%RAML 1.0
+types:
+  userinner:
+    description: Representa usuáris interos da corporação
+    example:
+      strict: true
+      value:
+        _id:
+          $oid: 5d1cfef46189806b4746b31f
+        name: Leanne Graham
+        username: Bret
+        email: Sincere@april.biz
+        phone: 1-770-736-8031 x56442
+    type: object
+  userouter:
+    description: Representa usuáris externos da corporação
+    example:
+      strict: true
+      value:
+        _id:
+          $oid: 5d1cfef46189806b4746b31f
+        name: Leanne Graham
+        username: Bret
+        email: Sincere@april.biz
+        address:
+          street: Kulas Light
+          suite: Apt. 556
+          city: Gwenborough
+          zipcode: 92998-3874
+          geo:
+            lat: "-37.3159"
+            lng: "81.1496"
+        phone: 1-770-736-8031 x56442
+        website: hildegard.org
+        company:
+          name: Romaguera-Crona
+          catchPhrase: Multi-layered client-server neural-net
+          bs: harness real-time e-markets
+    type: object
+  userall:
+    description: Representa usuários interos e externos da corporação
+    example:
+      strict: true
+      value:
+        _id:
+          $oid: 5d1cfef46189806b4746b31f
+        name: Leanne Graham
+        username: Bret
+        email: Sincere@april.biz
+        address:
+          street: Kulas Light
+          suite: Apt. 556
+          city: Gwenborough
+          zipcode: 92998-3874
+          geo:
+            lat: "-37.3159"
+            lng: "81.1496"
+        phone: 1-770-736-8031 x56442
+        website: hildegard.org
+        company:
+          name: Romaguera-Crona
+          catchPhrase: Multi-layered client-server neural-net
+          bs: harness real-time e-markets
+    type: object
+title: UserInner
+baseUri: api.mariobacellar.com.br
+description: Usuário com acesso interno na corporação
+mediaType:
+  - application/json
+version: 1.0.0
+protocols:
+  - HTTP
+  - HTTPS
+/userall:
+  get:
+    displayName: userall
+    description: Retorna usuários interos e externos da corporação
+    responses:
+      "200":
+        description: Sucesso
+        body:
+          example:
+            strict: true
+            value:
+              "0":
+                id: 1
+                name: Leanne Graham
+                username: Bret
+                email: Sincere@april.biz
+                address:
+                  street: Kulas Light
+                  suite: Apt. 556
+                  city: Gwenborough
+                  zipcode: 92998-3874
+                  geo:
+                    lat: "-37.3159"
+                    lng: "81.1496"
+                phone: 1-770-736-8031 x56442
+                website: hildegard.org
+                company:
+                  name: Romaguera-Crona
+                  catchPhrase: Multi-layered client-server neural-net
+                  bs: harness real-time e-markets
+              "1":
+                id: 2
+                name: Ervin Howell
+                username: Antonette
+                email: Shanna@melissa.tv
+                address:
+                  street: Victor Plains
+                  suite: Suite 879
+                  city: Wisokyburgh
+                  zipcode: 90566-7771
+                  geo:
+                    lat: "-43.9509"
+                    lng: "-34.4618"
+                phone: 010-692-6593 x09125
+                website: anastasia.net
+                company:
+                  name: Deckow-Crist
+                  catchPhrase: Proactive didactic contingency
+                  bs: synergize scalable supply-chains
+              "2":
+                id: 3
+                name: Clementine Bauch
+                username: Samantha
+                email: Nathan@yesenia.net
+                address:
+                  street: Douglas Extension
+                  suite: Suite 847
+                  city: McKenziehaven
+                  zipcode: 59590-4157
+                  geo:
+                    lat: "-68.6102"
+                    lng: "-47.0653"
+                phone: 1-463-123-4447
+                website: ramiro.info
+                company:
+                  name: Romaguera-Jacobson
+                  catchPhrase: Face to face bifurcated interface
+                  bs: e-enable strategic applications
+          type: object
+/userinner:
+  get:
+    displayName: userinnet
+    description: Retorna um usuário interno da corporação
+    responses:
+      "200":
+        description: Susso
+        body:
+          example:
+            strict: true
+            value:
+              _id:
+                $oid: 5d1cfef46189806b4746b31f
+              name: Leanne Graham
+              username: Bret
+              email: Sincere@april.biz
+              phone: 1-770-736-8031 x56442
+          type: object
+    queryParameters:
+      id?:
+        example: 6009bf274f08a205d57339a4
+        type: string          
+  post:
+    displayName: userinner
+    description: Insere um usuario inteno
+    body:
+      type: userinner
+    responses:
+      "200":
+        description: Sucsso
+/userouter:
+  get:
+    displayName: userouter
+    description: Retorna um usuário externo da corporação
+    responses:
+      "200":
+        body:
+          example:
+            strict: true
+            value:
+              _id:
+                $oid: 5d1cfef46189806b4746b31f
+              name: Leanne Graham
+              username: Bret
+              email: Sincere@april.biz
+              address:
+                street: Kulas Light
+                suite: Apt. 556
+                city: Gwenborough
+                zipcode: 92998-3874
+                geo:
+                  lat: "-37.3159"
+                  lng: "81.1496"
+              phone: 1-770-736-8031 x56442
+              website: hildegard.org
+              company:
+                name: Romaguera-Crona
+                catchPhrase: Multi-layered client-server neural-net
+                bs: harness real-time e-markets
+          type: object
+/userinner/today:
+  get:
+    displayName: userinner-today
+    description: Retorn os usuárisieo idos hoje
+    responses:
+      "200":
+        description: Sucesso
+        body:
+          example:
+            strict: true
+            value:
+              "0":
+                _id:
+                  $oid: 5d1cfef46189806b4746b31f
+                name: Leanne Graham 1
+                username: Bret
+                email: Sincere@april.biz
+                phone: 1-770-736-8031 x56442
+              "1":
+                _id:
+                  $oid: 5d1cfef46189806b4746b31f
+                name: Leanne Graham 2
+                username: Bret
+                email: Sincere@april.biz
+                phone: 1-770-736-8031 x56442
+              "2":
+                _id:
+                  $oid: 5d1cfef46189806b4746b31f
+                name: Leanne Graham 3
+                username: Bret
+                email: Sincere@april.biz
+                phone: 1-770-736-8031 x56442
+          type: object
+/userinner/load:
+  post:
+    displayName: Load a list of UserInner
+    responses:
+      "200":
+        body:
+          application/json:
+            description: Lista de usuarios recebida com sucesso
+            default: Arquivo recebido com sucesso
+            example: Example
+            type: string
+    body:
+      multipart/form-data:
+        fileTypes:
+          - "*/*"

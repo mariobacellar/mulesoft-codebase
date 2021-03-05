@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:mongo="http://www.mulesoft.org/schema/mule/mongo"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/mongo http://www.mulesoft.org/schema/mule/mongo/current/mule-mongo.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="bfd8400c-7608-49bc-9bcb-c822c651f598" >
+		<http:listener-connection host="0.0.0.0" port="8082" />
+	</http:listener-config>
+	<mongo:config name="MongoDB_Config" doc:name="MongoDB Config" doc:id="fcd3337f-819e-4a85-afa8-f2fb27e5ac29" >
+		<mongo:connection-string-connection connectionString="mongodb+srv://admin:admin@cluster0.rv6nl.mongodb.net/mule?retryWrites=true&amp;w=majority" />
+	</mongo:config>
+	<flow name="mongo-findFlow" doc:id="317c6882-4d61-4568-b360-9497cf635e62" >
+		<http:listener doc:name="Listener" doc:id="36ba73e3-1dbe-400c-9523-c9699630996a" config-ref="HTTP_Listener_config" path="/find"/>
+		<logger level="INFO" doc:name="Logger" doc:id="bd7eaf8e-40f7-4252-b258-f6452e77da3d" message="### Antes ###"/>
+		<mongo:find-documents collectionName="plano" doc:name="Find documnomeents" doc:id="09230534-1e99-4ddc-a981-0f6fcb238b51" config-ref="MongoDB_Config" fields="nome,tipoPessoa,valor,dtExpiracao,ativo">
+			<mongo:query ><![CDATA[{}]]></mongo:query>
+			<mongo:sort-by ><![CDATA[#[{"nome":0}]]]></mongo:sort-by>
+		</mongo:find-documents>
+		<ee:transform doc:name="Transform Message" doc:id="43220e7e-fd0f-40da-8102-5804b7955068" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="6f283cd1-9443-44e0-bb93-636e39a8805a" message="### Depois ###"/>
+	</flow>
+</mule>

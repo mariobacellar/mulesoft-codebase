@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="8c52cbf6-d04b-4bef-b2f0-ee3f5e2ca547" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="arquivo-distritosFlow" doc:id="b038c9f6-a86d-4a44-9236-49dc5f18ed05" >
+		<http:listener doc:name="Listener" doc:id="584a42b1-935e-461f-a126-56ad651c6284" path="/arquivo--get-distrito" config-ref="HTTP_Listener_config"/>
+		<file:read doc:name="Read" doc:id="f51604bc-f9fa-4f76-b2ee-e946267c0981" path="/home/mario/app/AnypointStudio/studio-workspace/arquivo-get-distritos/ibge-distritos.json"/>
+		<logger level="INFO" doc:name="Logger" doc:id="55686dc8-ecee-407d-adb1-3d7311f113fc" message="#[payload]"/>
+	</flow>
+</mule>

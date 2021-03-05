@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="3af4865d-b2f1-43ba-aed0-77ae6a329039" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="3f67f9a2-56b5-4b94-ae3e-67881fbf586b" >
+		<salesforce:basic-connection username="mario.bacellar@macro.com.br" password="Mcb@2020" securityToken="N7omGWTR0VAZg4JWzPOVRfl4" />
+	</salesforce:sfdc-config>
+	<flow name="json2salesforceFlow" doc:id="42b9aa9d-3fcf-40b0-978b-6a40e559695a" >
+		<http:listener doc:name="Listener" doc:id="9130afbe-1251-4cbe-8399-7843c2d16765" config-ref="HTTP_Listener_config" path="/json2sales"/>
+		<ee:transform doc:name="Transform Message" doc:id="060e9ac3-6476-4d29-8875-97eb9ce6a06e" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[ %dw 2.0
+output application/json
+---
+[{
+	AccountId: payload.AccountId,
+	Name: payload.Name,
+	StageName: payload.StageName,
+	Amount: payload.Amount,
+	Probability: payload.Probability,
+	Type: payload.Type,
+	CloseDate: payload.CloseDate,
+	LeadSource: payload.LeadSource,
+	OwnerId: payload.OwnerId
+}]]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="817d9e86-5863-45bf-b37b-47c402761580" message="#[payload]"/>
+		<salesforce:create doc:name="Create" doc:id="46206b36-3046-439c-b713-15aa70dc6583" config-ref="Salesforce_Config" type="opportunity"/>
+		<logger level="INFO" doc:name="Logger" doc:id="09ef5ec6-d7e9-47ed-a0ed-09c4f595697a" message="#[payload.items[0].message]"/>
+		<ee:transform doc:name="Transform Message" doc:id="d4711498-53f9-4eda-8510-68d69834499d" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="e11bcfaa-6236-4fc0-8f66-46cd1cf5b9c4" >
+				<logger level="INFO" doc:name="Logger" doc:id="dcd4d889-e1dd-49ce-9d16-1fa79670768c" message="#[payload]"/>
+				<set-payload value="## Deu Erro ##" doc:name="Set Payload" doc:id="ffd7e818-627e-4291-87f7-1521b767932d" />
+			</on-error-continue>
+		</error-handler>
+	</flow>
+</mule>

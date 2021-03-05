@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="507d2691-8f66-41ce-8b98-d9e6387a0701" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="translator-pt-engFlow" doc:id="c3f66910-c2f8-4c04-991a-f8faa52eb0e0" >
+		<http:listener doc:name="Listener" doc:id="9d88d479-2047-485e-b14f-42a00086faae" path="/translator" config-ref="HTTP_Listener_config"/>
+		<set-payload value='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"text": "Não comprendo!!!"&#10;}]' doc:name="Set Payload" doc:id="5856ee9c-454e-4339-85d6-fb187c30209e" />
+	</flow>
+</mule>

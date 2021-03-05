@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="2c544916-111f-4e35-9de3-981fd07a5d9a" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<file:config name="File_Config" doc:name="File Config" doc:id="713a70f8-9b8e-440f-925b-286349fd52b0" >
+		<file:connection workingDir="C:\00\html\received" />
+	</file:config>
+	<flow name="testFlow" doc:id="03ab34e7-e7dc-4ce1-8611-0dd4cf615134" >
+		<http:listener doc:name="Listener" doc:id="202b0a8a-8e22-4065-a9a6-bdfff319db85" config-ref="HTTP_Listener_config" path="/test"/>
+		<set-variable value="payload" doc:name="Set Variable" doc:id="5d71860c-790d-49d6-b0bd-bfc494806cd0" variableName="xcontent"/>
+		<logger level="INFO" doc:name="Logger" doc:id="af98340e-daaf-4a28-85e8-84b1f899acac" message="#[vars.xcontent]"/>
+		<file:write doc:name="Write" doc:id="b5415f8b-b52b-4f85-841e-4dc07b1607b6" config-ref="File_Config" path="C:\00\html\received\output.txt"/>
+		<set-payload value="Fim da execução" doc:name="Set Payload" doc:id="cf3d2ec1-d79f-47a8-a675-05ac75627562" />
+	</flow>
+</mule>

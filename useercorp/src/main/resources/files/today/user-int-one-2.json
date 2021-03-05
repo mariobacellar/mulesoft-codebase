@@ -1,0 +1,7 @@
+{
+	"_id": {"$oid": "5d1cfef46189806b4746b31f"},    
+	"name": "Mario Bacellar",
+    "username": "Mario",
+    "email": "mario.bacellar@gmail.com",
+    "phone": "55-999-888-777",
+}

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:amqp="http://www.mulesoft.org/schema/mule/amqp" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/amqp http://www.mulesoft.org/schema/mule/amqp/current/mule-amqp.xsd">
+	<amqp:config name="AMQP_Config" doc:name="AMQP Config" doc:id="1afce328-0c76-40a5-8a07-710f6c71d8a1" >
+		<amqp:connection host="172.17.0.2" port="5672" username="guest" password="guest" >
+			<reconnection >
+				<reconnect />
+			</reconnection>
+			<amqp:fallback-addresses />
+		</amqp:connection>
+	</amqp:config>
+	<flow name="test-rabbitmqFlow" doc:id="eaf867f8-5f07-4faa-af91-03384e7a333f" >
+		<amqp:listener doc:name="Listener" doc:id="5eeb13cb-2799-4370-a56a-eaf69176abd5" config-ref="AMQP_Config" queueName="hello"/>
+		<logger level="INFO" doc:name="Logger" doc:id="0fd7cdc1-0add-4b64-9345-04afc56f1a43" message="#[payload]" />
+	</flow>
+</mule>

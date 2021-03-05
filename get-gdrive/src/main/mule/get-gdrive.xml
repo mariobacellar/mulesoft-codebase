@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="5fc53109-779c-489d-a9dd-2d45d9b693c2" />
+	<http:request-config name="HTTP_Request_configuration1" doc:name="HTTP Request configuration" doc:id="4ad3cc0e-d3f5-4c84-b474-8323d68cb6de" >
+		<http:request-connection host="drive.google.com" />
+	</http:request-config>
+	<file:config name="File_Config" doc:name="File Config" doc:id="b85a398d-6f38-4e6d-984b-7ef32f198ff5" >
+		<file:connection workingDir="/home/mario/Downloads/tableau/csv/atendimento/" />
+	</file:config>
+	<flow name="get-gdriveFlow" doc:id="6c5a90a7-7609-402b-8702-f86670ecf35d" initialState="started">
+		<scheduler doc:name="Scheduler" doc:id="8d5727e7-2277-4801-82ec-56cf31cfa126" >
+			<scheduling-strategy >
+				<fixed-frequency />
+			</scheduling-strategy>
+		</scheduler>
+		<set-variable value="/uc?id=1J79OJbER8SjMPEI8973VhigszQ2hDcX7&amp;export=download" doc:name="Set Variable" doc:id="a9934f83-41c7-484d-b076-7c1cbccb0e0b" variableName="linkInteiro"/>
+		<http:request method="GET" doc:name="Request" doc:id="587c7055-b8b5-4e70-b965-e1ad7abdd1fa" config-ref="HTTP_Request_configuration1" path="#[vars.linkInteiro]"/>
+		<logger level="INFO" doc:name="Logger" doc:id="7197f222-ad59-4cd6-a24a-01fdf252d3dd" message="#[payload]"/>
+		<ee:transform doc:name="Transform Message" doc:id="0cea0b44-374f-4f60-b8a5-8ce8869c4355" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+input payload application/csv separator=';'
+output application/csv separator=','
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="65dafc1a-530d-4c39-a05e-53b033a8b270" message="#[payload]"/>
+		<ee:transform doc:name="Transform Message" doc:id="ee52c38b-ebd0-4e72-abce-c7e75bafed9b" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="3822cc9e-f696-4e04-a2d1-e66fe75e1cf2" message="#[payload]" />
+	</flow>
+	<flow name="ReadingFileTest" doc:id="805ccc8b-9a97-45fa-bb54-307469eb451e" initialState="stopped" >
+		<scheduler doc:name="Copy_of_Scheduler" doc:id="a8514abb-5aa6-4d2e-a2f7-770ecfbe2f31" >
+			<scheduling-strategy >
+				<fixed-frequency />
+			</scheduling-strategy>
+		</scheduler>
+		<file:read doc:name=" Read" doc:id="22661f75-346e-4518-a274-497073d2584b" config-ref="File_Config" path="/home/mario/Downloads/tableau/csv/atendimento/RELATORIO_ATENDIMENTOS_23_02_2021_11_28_12.csv" outputMimeType="application/csv" />
+		<foreach doc:name="For Each" doc:id="f3e8b589-f0bc-44b8-8d3e-5dbd898ddd26" collection="#[payload]">
+			<logger level="INFO" doc:name="Logger" doc:id="d5f1722c-599c-4784-b9b2-2fd885c7c016" message="#[payload]" />
+			<ee:transform doc:name="Transform Message" doc:id="b204bf99-d4bc-4a01-8d00-c2f68b165ee1" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+input payload application/csv header=true, separator=';'
+output application/csv header=true, separator=','
+---
+payload]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<logger level="INFO" doc:name="Logger" doc:id="ce6c5b4b-6f67-43d6-8da7-99775b6c27d3" message="#[payload]" />
+			<ee:transform doc:name="Transform Message" doc:id="4dee8657-7802-450c-ac85-a99fe099dc65">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+			<logger level="INFO" doc:name="Logger" doc:id="543fe7a7-0523-411a-b07e-2aaac11b1aef" message="#[payload]" />
+		</foreach>
+	</flow>
+</mule>

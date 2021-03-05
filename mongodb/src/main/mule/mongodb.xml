@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:mongo="http://www.mulesoft.org/schema/mule/mongo"
+	xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd
+http://www.mulesoft.org/schema/mule/mongo http://www.mulesoft.org/schema/mule/mongo/current/mule-mongo.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	
+	<mongo:config name="MongoDB_Config" doc:name="MongoDB Config" doc:id="ba3d1031-5855-48b7-885f-b9f3ec36ed85" >
+		<mongo:connection-string-connection connectionString="mongodb+srv://admin:admin@cluster0.rv6nl.mongodb.net/mule?retryWrites=true&amp;w=majority" />
+	</mongo:config>
+	
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="255b0da0-265c-4455-93ac-8e331f3bfd18" basePath="/plano" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<http:listener-config name="HTTP_Listener_config1" doc:name="HTTP Listener config" doc:id="e94c8ad6-932a-4415-8a7e-279702050f1b" >
+		<http:listener-connection host="0.0.0.0" port="8082" />
+	</http:listener-config>
+	
+	<flow name="mongodbFlow" doc:id="72b279c4-437b-4ffe-aa87-c58acd81b7ef" >
+		<http:listener doc:name="/GET Plano" doc:id="161e78fc-5b05-4c7b-aa39-b3527d039810" path="/planos-assinaturas" config-ref="HTTP_Listener_config1"/>
+		<set-variable value='#[upper(attributes.queryParams.tipopessoa)]' doc:name="Set Variable" doc:id="7d0e6720-63b8-443e-bf40-4b58426c3afd" variableName="xTipoPessoa"/>
+		<set-variable value='#[vars.xTipoPessoa ==  "PJ"]' doc:name="isPJ" doc:id="6421073e-c29b-4eff-8fcc-319fb0a080bb" variableName="xisPJ"/>
+		<set-variable value='#[vars.xTipoPessoa=="PF"]' doc:name="isPF" doc:id="9aeaf748-0d13-4df8-937a-0c79b565537d" variableName="xisPF" />
+		<mongo:collection-exists collectionName="plano" doc:name="Check if Plan CollectionExists" doc:id="f49e2a02-6682-45d2-9f3b-6924720bdec0" config-ref="MongoDB_Config" target="isCollectionExists"/>
+		<choice doc:name="ChoiceOne" doc:id="8c91f231-e6e5-4fe2-9724-98b4ecbf1096" >
+			<when expression='#[vars.isCollectionExists]'>
+				<choice doc:name="ChoiceTwo" doc:id="c82a6d56-374d-490f-b6eb-f4028fc8de49" >
+					<when expression="#[vars.xisPJ]">
+						<mongo:find-documents collectionName="plano" fields="nome, valor, ativo, tipoPessoa, dtExpiracao" doc:name="Find Plano PJ" doc:id="7cd8c3d8-c67a-451f-a131-f666741c56fe" config-ref="MongoDB_Config">
+					<mongo:query><![CDATA[{"tipoPessoa": "PJ"}]]></mongo:query>
+				</mongo:find-documents>
+						<ee:transform doc:name="Copy_of_Transform Message" doc:id="029bb4de-8233-4abb-9c20-b12f09702cfb">
+							<ee:message>
+								<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+							</ee:message>
+						</ee:transform>
+					</when>
+					<when expression="vars.xisPF">
+						<mongo:find-documents collectionName="plano" fields="nome, valor, ativo, tipoPessoa, dtExpiracao" doc:name="Find Plano PF" doc:id="cbb2e798-09a2-4ec5-81ef-ce25f83162fe" config-ref="MongoDB_Config">
+							<mongo:query><![CDATA[{"tipoPessoa": "PF"}]]></mongo:query>
+						</mongo:find-documents>
+						<ee:transform doc:name="Transform Message" doc:id="11d8ceb9-ac14-4c92-98eb-32bbacc0effa">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+					</when>
+					<otherwise>
+						<set-payload value="Informe o parâmetro tipopessoa=[PF/PJ]" doc:name="Set Response " doc:id="2994d4c4-580f-47c3-97cf-f2b5e703e38a" />
+					</otherwise>
+				</choice>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Logger" doc:id="67865f18-ff85-4e74-9e04-165e7247f06c" message="## Log - Document Plano not Exist ###"/>
+			</otherwise>
+		</choice>
+		<error-handler>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="f5e6c8b0-5945-432b-9953-e8e872c0fa07" >
+				<logger level="INFO" doc:name="### Log - On error happens ###" doc:id="08cb3227-0624-4949-a9dd-cc3aadcfcdd3" />
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+</mule>

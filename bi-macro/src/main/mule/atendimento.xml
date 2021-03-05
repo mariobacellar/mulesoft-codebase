@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="e40a2602-ab67-4a48-bbd8-dbf4fc942fc9" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="e9af05a5-0b5e-4f7d-8168-21f944894aa4" >
+		<db:generic-connection url="jdbc:postgresql://ec2-54-90-55-211.compute-1.amazonaws.com:5432/degsh157i7aurk?sslmode=require" driverClassName="org.postgresql.Driver" user="yfjdkgundlwhhl" password="da6dec0d624746a5f06f9a9a1b1bbfd43f5d09c3a8da7788cbef60cf6cf10919" />
+	</db:config>
+	<file:config name="File_Config" doc:name="File Config" doc:id="dd68c1a8-2eaa-4f6b-8628-5773149a322c" >
+		<file:connection workingDir="/home/mario/Downloads/tableau/csv/atendimento" />
+	</file:config>
+	<flow name="Copy_of_bi-macro-vivoFlow" doc:id="1f142f90-98ac-411e-8dd3-f92e1a60c1e4" >
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="Copy_of_On Error Continue" doc:id="9eb66e29-4b54-4cc5-a57e-b20f944fd01a" >
+				<set-payload value="#[error.detailedDescription]" doc:name="Copy_of_Set Payload" doc:id="fb87cde5-6250-4afc-9d1f-5fccbafadb7c" />
+			</on-error-continue>
+		</error-handler>
+		<http:listener doc:name="Copy_of_Listener" doc:id="5850abf9-ff62-42f3-92bf-d17a5a8f33dc" config-ref="HTTP_Listener_config" path="/bimacrovivo" outputMimeType="application/csv" />
+		<logger level="INFO" doc:name="Copy_of_Logger" doc:id="e7959e48-d341-4458-a1d2-bdc5c8336986" message="#[payload]" />
+		<ee:transform doc:name="Copy_of_Transform Message" doc:id="f8e3d1ed-8f88-4b45-88ac-df7fd52154e2" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+input payload application/csv header=true, separator=';', bodyStartLineNumber=0
+output application/csv separator=',',
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Copy_of_Logger" doc:id="a61b2f51-4dff-4de5-a6c2-e04cc7de5487" message="#[payload]" />
+		<ee:transform doc:name="Copy_of_Transform Message" doc:id="c958a02a-cdd3-4f6e-9821-6bb9c22d39d1" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+input payload application/csv header=true, separator=',', bodyStartLineNumber=0
+output application/json
+---
+payload 
+  ]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Copy_of_Logger" doc:id="4d4a4206-38dd-470c-ba40-0efe36d56f53" message="#[payload]" />
+		<set-payload value='#[%dw 2.0&#10;output application/json&#10;---&#10;[&#10;  {&#10;    "CODIGO": "3848566",&#10;    "OPERADOR": "ADRIANA RANGEL DA SILVA 	VALENTE",&#10;    "NOME": " ",&#10;    "CPFCNPJ": "",&#10;    "TELEFONE1": "1147821541",&#10;    "TELEFONE2": "",&#10;    "TELEFONE3": "",&#10;    "TELEFONE4": "",&#10;    "TELEFONE5": "",&#10;    "CIDADE": "",&#10;    "UF": "",&#10;    "REPRESENTANTE_LEGAL": "",&#10;    "TIPO_ATENDIMENTO": "TELEFONIA",&#10;    "MOTIVO_ATENDIMENTO": "TELEFONE NAO ATENDE",&#10;    "MAILING": "CB9581",&#10;    "CAMPANHA": "CB_B2C_FORA DE HORA_FIXA",&#10;    "EVIDENCIA": "NAO",&#10;    "OBSERVACAO": "",&#10;    "TIPO_AGENDAMENTO": ""&#10;  },&#10;  {&#10;    "CODIGO": "3848565",&#10;    "OPERADOR": "ROGERIO DA SILVA",&#10;    "NOME": "ANA",&#10;    "CPFCNPJ": "36889344820",&#10;    "TELEFONE1": "17997458158",&#10;    "TELEFONE2": "",&#10;    "TELEFONE3": "",&#10;    "TELEFONE4": "",&#10;    "TELEFONE5": "",&#10;    "CIDADE": "",&#10;    "UF": "",&#10;    "REPRESENTANTE_LEGAL": "",&#10;    "TIPO_ATENDIMENTO": "TELEFONIA",&#10;    "MOTIVO_ATENDIMENTO": "TELEFONE MUDO",&#10;    "MAILING": "CA_CONTROLE",&#10;    "CAMPANHA": "B2C_CARRINHO ABANDONADO_MOVEL",&#10;    "EVIDENCIA": "NAO",&#10;    "OBSERVACAO": "VIVO CONTROLE 12 5GB DIGITAL",&#10;    "TIPO_AGENDAMENTO": ""&#10;  }&#10;]]' doc:name="Copy_of_Set Payload" doc:id="e686b5d1-24a3-4b05-a809-8d70d67586c5" />
+		<db:bulk-insert doc:name="Copy_of_Bulk insert" doc:id="38a20094-d4d0-4097-846a-12acef8a97d3" config-ref="Database_Config" >
+			<db:sql ><![CDATA[INSERT INTO atendimento (CODIGO,OPERADOR,NOME,CPFCNPJ,TELEFONE1,TELEFONE2,TELEFONE3,TELEFONE4,TELEFONE5,CIDADE,UF,REPRESENTANTE_LEGAL,TIPO_ATENDIMENTO,MOTIVO_ATENDIMENTO,MAILING,CAMPANHA,EVIDENCIA,OBSERVACAO,TIPO_AGENDAMENTO) VALUES (:CODIGO, :OPERADOR, :NOME, :CPFCNPJ, :TELEFONE1, :TELEFONE2, :TELEFONE3, :TELEFONE4, :TELEFONE5, :CIDADE, :UF, :REPRESENTANTE_LEGAL, :TIPO_ATENDIMENTO , :MOTIVO_ATENDIMENTO, :MAILING, :CAMPANHA, :EVIDENCIA, :OBSERVACAO, :TIPO_AGENDAMENTO) ]]></db:sql>
+		</db:bulk-insert>
+		<logger level="INFO" doc:name="Copy_of_Logger" doc:id="2f4e5600-daaf-4de0-8c42-757c1388fa86" message="#[payload]" />
+		<set-payload value="Finished!" doc:name="Copy_of_Set Payload" doc:id="01869f26-7571-430b-8bcc-ddd30c3fcd52" />
+	</flow>
+</mule>

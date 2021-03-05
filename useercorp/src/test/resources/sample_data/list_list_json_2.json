@@ -1,0 +1,15 @@
+[{
+	"_id": {"$oid": "5d1cfef46189806b4746b31f"},    
+	"name": "Leanne Graham",
+    "username": "Bret",
+    "email": "Sincere@april.biz",
+    "phone": "1-770-736-8031 x56442"
+},
+{
+    "_id": {"$oid": "5d1cfef46189806b4746b31f"},
+	"name": "Mario Bacellar",
+    "username": "Mario",
+    "email": "mario.bacellar@gmail.com",
+    "phone": "55-999-888-777"
+}
+]

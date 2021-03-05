@@ -1,0 +1,31 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<types:mule xmlns:types="http://www.mulesoft.org/schema/mule/types">
+  <types:catalog>
+    <types:type name="OpportunityType" format="json">
+      <types:shape format="weave" example="examples/opportunityTypeSample.json"><![CDATA[%dw 2.0
+
+type OpportunityType = {|
+  Name: String, 
+  AccountId: String, 
+  Amount: String, 
+  CloseDate: String, 
+  StageName: String, 
+  Probability: String, 
+  Type: String, 
+  LeadSource: String, 
+  OwnerId: String
+|} {"example": "{\\\"Name\\\":\\\"Acme - 70 Widgets (Sample)\\\",\\\"AccountId\\\":\\\"Acme (Sample)\\\",\\\"Amount\\\":\\\"119,99\\\",\\\"CloseDate\\\":\\\"10\\/11\\/2020\\\",\\\"StageName\\\":\\\"Proposal\\\",\\\"Probability\\\":\\\"0\\\",\\\"Type\\\":\\\"New Business\\\",\\\"LeadSource\\\":\\\"Partner\\\",\\\"OwnerId\\\":\\\"S\u00E3o Thiago, Pablo\\\"}"}
+
+]]></types:shape>
+    </types:type>
+  </types:catalog>
+  <types:enrichment select="#060e9ac3-6476-4d29-8875-97eb9ce6a06e">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="OpportunityType"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+</types:mule>

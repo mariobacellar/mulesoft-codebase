@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd 
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+    <http:listener-config name="api-transarq-httpListenerConfig">
+        <http:listener-connection host="0.0.0.0" port="8081" />
+    </http:listener-config>
+    <apikit:config name="api-transarq-config" api="api-transarq.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+	<file:config name="File_Config" doc:name="File Config" doc:id="394708e6-1ec6-40e5-97d3-b381d1ed6b0a" >
+		<file:connection workingDir="${app.name}/" />
+	</file:config>
+	<http:request-config name="HTTP_Request_Slack" doc:name="HTTP Request configuration" doc:id="5f336be6-3549-4cd4-a075-caea528369a9" >
+		<http:request-connection protocol="HTTPS" host="hooks.slack.com" />
+	</http:request-config>
+	<flow name="api-transarq-main">
+        <http:listener config-ref="api-transarq-httpListenerConfig" path="/api/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="api-transarq-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:BAD_REQUEST">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Bad request"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Method not allowed"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">405</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not acceptable"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">406</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Unsupported media type"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">415</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not Implemented"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">501</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="api-transarq-console">
+        <http:listener config-ref="api-transarq-httpListenerConfig" path="/console/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:console config-ref="api-transarq-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="post:\csv:text\csv:api-transarq-config" initialState="started">
+		<set-variable value="#[if (attributes.headers.'arquivo-nome' != null) attributes.headers.'arquivo-nome' else &quot;&quot;]" doc:name="xArquivoNome" doc:id="64faa6e7-17cc-4d83-affa-b3abe5a134f5" variableName="xArquivoNome" />
+		<set-variable value="#[if (attributes.headers.'arquivo-origem' != null) attributes.headers.'arquivo-origem' else &quot;&quot;]" doc:name="xArquivoOrigem" doc:id="2ae4ac11-1a0b-46b2-b169-3e606bc6d1d9" variableName="xArquivoOrigem" />
+		<set-variable value="#[if (attributes.headers.'arquivo-tipo' != null) attributes.headers.'arquivo-tipo' else &quot;&quot;]" doc:name="xArquivoTipo" doc:id="229465e4-1466-44c2-8915-00a123791888" variableName="xArquivoTipo" />
+		<set-variable value='#["./csv/recebido/" ++ vars.xArquivoOrigem default "" ++ "/" ++ vars.xArquivoTipo default "" ++ "/"]' doc:name="xArquivoPastaRecebido" doc:id="bd223153-9055-4fa8-a791-d770ebbdc222" variableName="xArquivoPastaRecebido" />
+		<set-variable value='#["./csv/processado/" ++ vars.xArquivoOrigem default "" ++ "/" ++ vars.xArquivoTipo default "" ++ "/"]' doc:name="xArquivoPastaProcessado" doc:id="d0ba6161-e237-4308-82f4-da462a71b169" variableName="xArquivoPastaProcessado" />
+		<try doc:name="Try - Pasta Recebido" doc:id="b546e29a-c2a9-4d08-8ebf-7483824ad7c3" >
+			<file:create-directory doc:name="Create directory" doc:id="8bd460bd-4604-4ff7-b53c-d3f38cd1e101" config-ref="File_Config" directoryPath="#[vars.xArquivoPastaRecebido]"/>
+			<error-handler >
+				<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="88e1fb28-cc94-4daf-b36b-3825119bbc6c" >
+					<logger level="INFO" doc:name="Logger" doc:id="a3048eb6-6dc5-4c9f-8fbb-5e49023d22c1" message='#["Folder ja existe:" ++ vars.xArquivoPastaRecebido]'/>
+				</on-error-continue>
+			</error-handler>
+		</try>
+		<try doc:name="Try - Pasta Processado" doc:id="72240349-7e69-4677-8066-ac2679379dec" >
+			<file:create-directory doc:name="Create directory" doc:id="1e0f4e6a-6875-461e-a173-a9c06d4e3082" config-ref="File_Config" directoryPath="#[vars.xArquivoPastaProcessado]"/>
+			<error-handler >
+				<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="baa8f5f0-443a-4fcf-aea1-c914b989361b" >
+					<logger level="INFO" doc:name="Logger" doc:id="70e2e913-e531-44c0-ba81-60ab25aff683" message='#["Folder ja existe:" ++ vars.xArquivoPastaProcessado]' />
+				</on-error-continue>
+			</error-handler>
+		</try>
+		<set-variable value='#[now() as String {format: "yyyyMMdd_hhms_"}]' doc:name="xArquivoPrefixo" doc:id="1479c8db-9dfa-4a75-a324-4518d4c55b68" variableName="xArquivoPrefixo" />
+		<set-variable value='#[vars.xArquivoPastaRecebido default "" ++ vars.xArquivoPrefixo default "" ++ vars.xArquivoNome default ""]' doc:name="xArquivoSaida" doc:id="65dee7a2-7b2d-4e35-9db4-cbe8700d8ffd" variableName="xArquivoSaida" />
+		<file:write doc:name="Write" doc:id="98696baa-4123-4c76-a9c5-1f4cc089b2af" config-ref="File_Config" path="#[vars.xArquivoSaida]" createParentDirectories="false"/>
+		<ee:transform doc:name="Transform Message" doc:id="93522372-03be-40bd-baaa-f0b5450075ad">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    "text": "[DATA LAKE] Arquivo recebido: " ++ vars.xArquivoSaida
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<http:request method="POST" doc:name="Request" doc:id="fe10a3b6-4f89-41da-ac2d-24603ee3bd57" config-ref="HTTP_Request_Slack" path="/services/T3D7CDCNB/B01PHJBPX9T/h4NWOatSPZJDfXb5YKsq0KcK"/>
+		<set-payload value='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  status: {&#10;  	"code": 0,&#10;  	"msg": "sucesso",&#10;  	"desc": "O Grup Macro agradece",&#10;  	"csv":vars.xArquivoSaida,&#10;  	"origem": vars.xArquivoOrigem&#10;    }&#10;}]' doc:name="Set Payload" doc:id="8eae1cda-146c-47e1-bbe7-823a90de4b1d" />
+		<logger level="INFO" doc:name="Logger" doc:id="2833c3ac-6224-4aa9-bf3d-6c3f7de5031e" message="#[payload]"/>
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="1420b861-ef37-4480-a034-dcb95b96825a" >
+				<set-payload value='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  status: {&#10;  	"code": 0,&#10;  	"msg": "erro",&#10;  	"desc": "Entre em contato com seu gerente. O Grup Macro agradece",&#10;  	"csv": vars.xArquivoSaida,&#10;  	"origem": vars.xArquivoOrigem&#10;    }&#10;}]' doc:name="Set Payload" doc:id="475f141c-854b-4310-a941-ed75ab00752e" />
+				<logger level="INFO" doc:name="Logger" doc:id="caed65d6-19e8-466f-a665-b591ff042e25" message="#[payload]" />
+			</on-error-continue>
+		</error-handler>
+    </flow>
+</mule>

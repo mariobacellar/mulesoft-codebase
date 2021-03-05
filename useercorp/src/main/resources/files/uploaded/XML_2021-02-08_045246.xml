@@ -1,0 +1,41 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<parts>
+  <myfile>
+    <headers>
+      <Content-Disposition>
+        <name>myfile</name>
+        <filename>user-int-list.xml</filename>
+        <subtype>form-data</subtype>
+      </Content-Disposition>
+      <Content-Type>application/xml</Content-Type>
+    </headers>
+    <content>
+      <users>
+        <user>
+          <nome>mario-bacellar-xml-1</nome>
+          <email>marbac-xml-1@gmail.com</email>
+        </user>
+        <user>
+          <nome>mario-bacellar-xml-2</nome>
+          <email>marbac-xml-2@gmail.com</email>
+        </user>
+        <user>
+          <nome>mario-bacellar-xml-3</nome>
+          <email>marbac-xml-3@gmail.com</email>
+        </user>
+        <user>
+          <nome>mario-bacellar-xml-4</nome>
+          <email>marbac-xml-4@gmail.com</email>
+        </user>
+        <user>
+          <nome>mario-bacellar-xml-5</nome>
+          <email>marbac-xml-5@gmail.com</email>
+        </user>
+        <user>
+          <nome>mario-bacellar-xml-6</nome>
+          <email>marbac-xml-6@gmail.com</email>
+        </user>
+      </users>
+    </content>
+  </myfile>
+</parts>

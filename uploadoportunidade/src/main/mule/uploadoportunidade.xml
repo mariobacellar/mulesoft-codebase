@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="6cbacdb8-693a-4e51-b181-2a02961a995c" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<file:config name="File_Config" doc:name="File Config" doc:id="ee50abe6-c15d-4969-bdaf-d41da12ac794" >
+		<file:connection workingDir="C:\00\file\output" />
+	</file:config>
+	<flow name="uploadOportunidade" doc:id="7d8c1fb2-730c-41d3-9ec7-2a82b141f401" >
+		<http:listener doc:name="/POST Upload Oportunidade" doc:id="6f463250-0715-4f28-91c5-d6d35754eae5" config-ref="HTTP_Listener_config" path="/uploadOportunidade" outputEncoding="UTF-8" allowedMethods="POST" >
+			<ee:repeatable-file-store-stream inMemorySize="1024" />
+		</http:listener>
+		<set-variable value="#[payload]" doc:name="Save Payload" doc:id="e37185ad-e6c6-46a6-b925-4a5e0f89229b" variableName="xpayload" mimeType="multipart/form-data" />
+		<ee:transform doc:name="Transform Message" doc:id="45000f0f-be8d-4c56-b17b-ecf6e3357ba9" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="Transform Message" doc:id="f2a7870c-2eda-410f-b411-73a760539fcc" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output text/java
+---
+payload.parts.myfile.content splitBy('\r\n')]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<set-variable value="#[payload]" doc:name="Set Variable" doc:id="3289ab74-f09c-4160-87ae-2b54b16191bf" variableName="xcontent"/>
+		<set-variable value="Shinobi" doc:name="Set Parceiro" doc:id="457aabe5-de9f-4e63-95c1-e3b9ffffdcb3" variableName="xparceiro" />
+		<set-variable value='#["C:\00\\file\\input\\file-" ++ vars.xparceiro ++ now() as String {format: "y-MM-dd"} ++ "_"++ now() as String {format: "hhms"} ++ ".csv"]' doc:name="Set Variable File Name" doc:id="01954b12-e898-4045-92e4-ba2a8e2e7402" variableName="xoutputfilename" />
+		<foreach doc:name="For Each" doc:id="ffec22dd-3ccc-4c89-bf93-6fa7d02d7d79" collection="#[vars.xcontent]">
+			<file:write doc:id="55ac18ca-e3c7-402e-9d79-94892edc7c52" config-ref="File_Config" path="#[vars.xoutputfilename]" doc:name="Write Output File" mode="APPEND">
+				<file:content ><![CDATA[#[payload ++ "\r\n"]]]></file:content>
+		</file:write>
+		</foreach>
+		<set-payload value="O Grupo Macro Agradece" doc:name="Set Sucess Payload" doc:id="259863da-4e97-487e-a5d9-9d7bbbc1d179" />
+	</flow>
+</mule>

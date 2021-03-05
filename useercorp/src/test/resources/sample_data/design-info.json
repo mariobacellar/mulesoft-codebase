@@ -1,0 +1,19 @@
+{
+  "sampleData": {
+    "2cb123c5-f83f-452e-b5ac-156eeb3dc282": {
+      "vars-varOuterUsers": "sample_data/json.json",
+      "vars-varInnerUsers": "sample_data/list_list_json.json"
+    },
+    "a02329d1-b0cd-4520-9bfc-57d4261d733f": {
+      "payload": "sample_data/list_list_json_2.json"
+    },
+    "a9870ea1-5659-4581-a3ff-10bf12b89f98": {
+      "payload": "sample_data/json_2.json"
+    },
+    "ab3ab925-d32b-4a48-9e0a-04844972653d": {
+      "vars-varOuterUsers": "sample_data/json_1.json",
+      "vars-varInnerUsers": "sample_data/list_list_json_1.json"
+    },
+    "54542f43-fbaf-4f56-8131-12503b191433": {}
+  }
+}

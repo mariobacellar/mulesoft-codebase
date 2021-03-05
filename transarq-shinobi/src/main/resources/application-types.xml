@@ -1,0 +1,30 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<types:mule xmlns:types="http://www.mulesoft.org/schema/mule/types">
+  <types:catalog>
+    <types:type name="csvAtendimento" format="csv">
+      <types:shape format="weave" example="examples/20210226_012421_RELATORIO_ATENDIMENTOS_23_02_2021_11_28_12.csv"><![CDATA[%dw 2.0
+
+type csvAtendimento = Array<{|  CODIGO: String,   OPERADOR: String,   NOME: String,   "CPF/CNPJ": String,   "TELEFONE 1": String,   "TELEFONE 2": String,   "TELEFONE 3": String,   "TELEFONE 4": String,   " TELEFONE 5": String,   CIDADE: String,   UF: String,   "REPRESENTANTE LEGAL": String,   "TIPO DE ATENDIMENTO": String,   "MOTIVO DE ATENDIMENTO": String,   MAILING: String,   CAMPANHA: String,   "DATA DE CADASTRO": Date,   "HORA DE CADASTRO": String,   DATA_CADASTRO_LEAD: DateTime,   EVIDENCIA: String,   OBSERVACAO: String,   TIPO_DE_AGENDAMENTO: String,   DATA_DE_RETORNO: DateTime|}> {"isQuotedString": "false",
+"header": "true",
+"headerLineNumber": "0",
+"separator": ";"}
+
+]]></types:shape>
+      <types:properties>
+        <types:property name="headerLineNumber" value="0"/>
+        <types:property name="header" value="true"/>
+        <types:property name="isQuotedString" value="false"/>
+        <types:property name="separator" value=";"/>
+      </types:properties>
+    </types:type>
+  </types:catalog>
+  <types:enrichment select="#547da6fe-1539-4623-98d0-e39af6b6743a">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="csvAtendimento"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+</types:mule>

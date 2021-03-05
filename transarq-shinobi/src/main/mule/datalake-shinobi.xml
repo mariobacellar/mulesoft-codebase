@@ -1,0 +1,421 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="c6ae5312-c177-4ba8-9099-424feb010f0f" >
+		<db:generic-connection url="jdbc:postgresql://ec2-54-90-55-211.compute-1.amazonaws.com:5432/degsh157i7aurk?sslmode=require" driverClassName="org.postgresql.Driver" user="yfjdkgundlwhhl" password="da6dec0d624746a5f06f9a9a1b1bbfd43f5d09c3a8da7788cbef60cf6cf10919" />
+	</db:config>
+	<file:config name="File_Config" doc:name="File Config" doc:id="630abe22-4bcd-4ca9-a771-d264272ffc14" >
+		<file:connection workingDir="${mule.home}/apps/${app.name}/" />
+	</file:config>
+ 	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="48c771db-090b-4bb1-b4b3-e2b991087191" >
+		<http:request-connection protocol="HTTPS" host="hooks.slack.com" />
+	</http:request-config>
+	<flow name="atendimentoFlow" doc:id="4d48b040-f3ac-4b55-97d5-185f3ef246c2" initialState="started">
+		<file:listener doc:name="On New or Updated File" doc:id="8c8b28ac-99ce-4ff1-b08c-07ba92759696" config-ref="File_Config" directory="../../../../transarq-api/src/main/resources/csv/recebido/shinobi/atendimento" moveToDirectory="../../../../transarq-api/src/main/resources/csv/processado/shinobi/atendimento">
+			<scheduling-strategy >
+				<fixed-frequency />
+			</scheduling-strategy>
+		</file:listener>
+		<set-variable value='#[if (attributes.path == null) "" else attributes.path]' doc:name="xPath" doc:id="9171d202-0940-4c0f-a413-7220bfdf7d83" variableName="xPath" />
+		<ee:transform doc:name="Transform Message" doc:id="547da6fe-1539-4623-98d0-e39af6b6743a" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+import * from dw::core::Strings
+input payload application/csv header=true, separator=',', bodyStartLineNumber=0
+output application/json
+fun normDate(date) =  (date) replace "/" with "-"  replace "." with "-"
+---
+payload map (item, valor)->{ 
+	"CODIGO": item.CODIGO,
+	"OPERADOR": item.OPERADOR,
+	"NOME": item.NOME,
+	"CPFCNPJ": item.'CPF/CNPJ',
+	"TELEFONE1": item.'TELEFONE 1',
+	"TELEFONE2": item.'TELEFONE 2',
+	"TELEFONE3": item.'TELEFONE 3',
+	"TELEFONE4": item.'TELEFONE 4',
+	"TELEFONE5": item.'TELEFONE 5',
+	"CIDADE": item.CIDADE,
+	"UF": item.UF,
+	"REPRESENTANTE_LEGAL": item."REPRESENTANTE LEGAL",
+	"TIPO_ATENDIMENTO": item."TIPO DE ATENDIMENTO",
+	"MOTIVO_ATENDIMENTO": item."MOTIVO DE ATENDIMENTO",
+	"MAILING": item.MAILING,
+	"CAMPANHA": item.CAMPANHA,
+	
+	"DATA_CADASTRO": 
+    if (item."DATA DE CADASTRO"  == ""   ) null  else 
+    if (item."DATA DE CADASTRO"  == " "  ) null else 
+    if (item."DATA DE CADASTRO"  == null ) null else 
+    ( normDate(item."DATA DE CADASTRO") as Date {format: "dd-MM-yyyy"} as String {format:"yyyy-MM-dd"}),
+	
+	"HORA_CADASTRO": 
+	if (item."HORA DE CADASTRO"  == ""   ) null  else 
+    if (item."HORA DE CADASTRO"  == " "  ) null else 
+    if (item."HORA DE CADASTRO"  == null ) null else 
+    item."HORA DE CADASTRO",
+   
+	"DATA_CADASTRO_LEAD": 
+    if (item.DATA_CADASTRO_LEAD  == ""   ) null  else 
+    if (item.DATA_CADASTRO_LEAD  == " "  ) null else 
+    if (item.DATA_CADASTRO_LEAD  == null ) null else 
+    ( normDate(item.DATA_CADASTRO_LEAD) as Date {format: "dd-MM-yyyy HH:m:s"} as String {format:"yyyy-MM-dd"}) ++ " " ++
+    substringAfter(item.DATA_CADASTRO_LEAD, " ") ++ ".000",
+
+	"EVIDENCIA": item.EVIDENCIA,
+	"OBSERVACAO": item.OBSERVACAO,
+	"TIPO_AGENDAMENTO": item.TIPO_DE_AGENDAMENTO,
+    
+	"DATA_RETORNO":   
+    if (item.DATA_DE_RETORNO  == ""   ) null  else 
+    if (item.DATA_DE_RETORNO  == " "  ) null else 
+    if (item.DATA_DE_RETORNO  == null ) null else 
+    ( normDate(item.DATA_DE_RETORNO) as Date {format: "dd-MM-yyyy HH:mm"} as String {format:"yyyy-MM-dd"}) ++ " " ++
+    substringAfter(item.DATA_DE_RETORNO, " ") ++ ":00.000"
+
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<db:bulk-insert doc:name="Bulk insert" doc:id="7d18dc6e-0547-4a8f-8676-edc40ea48bd2" config-ref="Database_Config">
+			<db:sql ><![CDATA[INSERT INTO atendimento (
+CODIGO,
+OPERADOR,
+NOME,
+CPFCNPJ,
+TELEFONE1,
+TELEFONE2,
+TELEFONE3,
+TELEFONE4,
+TELEFONE5,
+CIDADE,
+UF,
+REPRESENTANTE_LEGAL,
+TIPO_ATENDIMENTO,
+MOTIVO_ATENDIMENTO,
+MAILING,
+CAMPANHA,
+EVIDENCIA,
+OBSERVACAO,
+TIPO_AGENDAMENTO,
+DATA_CADASTRO,
+HORA_CADASTRO,
+DATA_CADASTRO_LEAD,
+DATA_RETORNO) 
+VALUES(
+:CODIGO,
+:OPERADOR,
+:NOME,
+:CPFCNPJ,
+:TELEFONE1,
+:TELEFONE2,
+:TELEFONE3,
+:TELEFONE4,
+:TELEFONE5,
+:CIDADE,
+:UF, 
+:REPRESENTANTE_LEGAL, 
+:TIPO_ATENDIMENTO , 
+:MOTIVO_ATENDIMENTO, 
+:MAILING, 
+:CAMPANHA, 
+:EVIDENCIA, 
+:OBSERVACAO, 
+:TIPO_AGENDAMENTO, 
+:DATA_CADASTRO, 
+:HORA_CADASTRO, 
+:DATA_CADASTRO_LEAD, 
+:DATA_RETORNO) ]]></db:sql>
+		</db:bulk-insert>
+		<ee:transform doc:name="Transform Message" doc:id="a89ff0c0-77ae-4d4d-91eb-57cfb27f8274">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    "text": "[DATA LAKE] Arquivo inserido: " ++ vars.xPath default ""
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<http:request method="POST" doc:name="Request" doc:id="587d85ff-0ecc-4e67-9e94-80df59950721" config-ref="HTTP_Request_configuration" path="/services/T3D7CDCNB/B01PHJBPX9T/h4NWOatSPZJDfXb5YKsq0KcK"/>
+		<logger level="INFO" doc:name="Logger" doc:id="8656d9b8-db34-4706-88c4-952dee1adf88" message='#["Arquivo inserido -&gt; " ++ vars.xPath]' />
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="2a3d651a-ab06-48c5-a743-0b0a9b50c2ee" >
+				<logger level="INFO" doc:name="Logger" doc:id="7572e452-04aa-4caa-899c-58e6bf7d8358" message="#[error.cause]"/>
+			</on-error-continue>
+		</error-handler>
+	</flow>
+	<flow name="vendaFlow" doc:id="64391a09-c0c3-4400-b0d0-207240999e2f" initialState="started">
+		<file:listener doc:name="On New or Updated File" doc:id="b9deb8ee-8ff1-4602-89e6-e2ea7dc6617d" config-ref="File_Config" directory="../../../../transarq-api/src/main/resources/csv/recebido/shinobi/venda" moveToDirectory="../../../../transarq-api/src/main/resources/csv/processado/shinobi//venda">
+			<scheduling-strategy >
+				<fixed-frequency />
+			</scheduling-strategy>
+		</file:listener>
+		<set-variable value='#[if (attributes.path == null) "" else attributes.path]' doc:name="xPath" doc:id="aa835619-e3ba-4328-b078-339fd88759f7" variableName="xPath"/>
+		<ee:transform doc:name="Transform Message" doc:id="449b1d84-e211-4f6a-ac42-1f7966c2cdae" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+import * from dw::core::Strings
+input payload application/csv header=true, separator=',', bodyStartLineNumber=0
+output application/json
+fun normDate(date) =  (date) replace "/" with "-"  replace "." with "-"
+---
+payload map (item, valor)->{ 
+	"CODIGO": item.CODIGO,
+	"OPERADOR": item.OPERADOR,
+	"NOME": item.NOME,
+	"CPFCNPJ": item.'CPF/CNPJ',
+	"TELEFONE1": item.'TELEFONE 1',
+	"TELEFONE2": item.'TELEFONE 2',
+	"TELEFONE3": item.'TELEFONE 3',
+	"TELEFONE4": item.'TELEFONE 4',
+	"TELEFONE5": item.'TELEFONE 5',
+	"CIDADE": item.CIDADE,
+	"UF": item.UF,
+	"REPRESENTANTE_LEGAL": item."REPRESENTANTE LEGAL",
+	"TIPO_ATENDIMENTO": item."TIPO DE ATENDIMENTO",
+	"MOTIVO_ATENDIMENTO": item."MOTIVO DE ATENDIMENTO",
+	"MAILING": item.MAILING,
+	"CAMPANHA": item.CAMPANHA,
+	
+	"DATA_CADASTRO": 
+    if (item."DATA DE CADASTRO"  == ""   ) null  else 
+    if (item."DATA DE CADASTRO"  == " "  ) null else 
+    if (item."DATA DE CADASTRO"  == null ) null else 
+    ( normDate(item."DATA DE CADASTRO") as Date {format: "dd-MM-yyyy"} as String {format:"yyyy-MM-dd"}),
+	
+	"HORA_CADASTRO": 
+	if (item."HORA DE CADASTRO"  == ""   ) null  else 
+    if (item."HORA DE CADASTRO"  == " "  ) null else 
+    if (item."HORA DE CADASTRO"  == null ) null else 
+    item."HORA DE CADASTRO",
+   
+	"DATA_CADASTRO_LEAD": 
+    if (item.DATA_CADASTRO_LEAD  == ""   ) null  else 
+    if (item.DATA_CADASTRO_LEAD  == " "  ) null else 
+    if (item.DATA_CADASTRO_LEAD  == null ) null else 
+    ( normDate(item.DATA_CADASTRO_LEAD) as Date {format: "dd-MM-yyyy HH:m:s"} as String {format:"yyyy-MM-dd"}) ++ " " ++
+    substringAfter(item.DATA_CADASTRO_LEAD, " ") ++ ".000",
+
+	"EVIDENCIA": item.EVIDENCIA,
+	"OBSERVACAO": item.OBSERVACAO,
+	"TIPO_AGENDAMENTO": item.TIPO_DE_AGENDAMENTO,
+    
+	"DATA_RETORNO":   
+    if (item.DATA_DE_RETORNO  == ""   ) null  else 
+    if (item.DATA_DE_RETORNO  == " "  ) null else 
+    if (item.DATA_DE_RETORNO  == null ) null else 
+    ( normDate(item.DATA_DE_RETORNO) as Date {format: "dd-MM-yyyy HH:mm"} as String {format:"yyyy-MM-dd"}) ++ " " ++
+    substringAfter(item.DATA_DE_RETORNO, " ") ++ ":00.000"
+
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<db:bulk-insert doc:name="Bulk insert" doc:id="c5477ca9-cbd8-4c98-93e6-ddafa5e73822" config-ref="Database_Config">
+			<db:sql ><![CDATA[INSERT INTO atendimento (
+CODIGO,
+OPERADOR,
+NOME,
+CPFCNPJ,
+TELEFONE1,
+TELEFONE2,
+TELEFONE3,
+TELEFONE4,
+TELEFONE5,
+CIDADE,
+UF,
+REPRESENTANTE_LEGAL,
+TIPO_ATENDIMENTO,
+MOTIVO_ATENDIMENTO,
+MAILING,
+CAMPANHA,
+EVIDENCIA,
+OBSERVACAO,
+TIPO_AGENDAMENTO,
+DATA_CADASTRO,
+HORA_CADASTRO,
+DATA_CADASTRO_LEAD,
+DATA_RETORNO) 
+VALUES(
+:CODIGO,
+:OPERADOR,
+:NOME,
+:CPFCNPJ,
+:TELEFONE1,
+:TELEFONE2,
+:TELEFONE3,
+:TELEFONE4,
+:TELEFONE5,
+:CIDADE,
+:UF, 
+:REPRESENTANTE_LEGAL, 
+:TIPO_ATENDIMENTO , 
+:MOTIVO_ATENDIMENTO, 
+:MAILING, 
+:CAMPANHA, 
+:EVIDENCIA, 
+:OBSERVACAO, 
+:TIPO_AGENDAMENTO, 
+:DATA_CADASTRO, 
+:HORA_CADASTRO, 
+:DATA_CADASTRO_LEAD, 
+:DATA_RETORNO) ]]></db:sql>
+		</db:bulk-insert>
+		<ee:transform doc:name="Transform Message" doc:id="4a0ff152-826e-42cd-a2c4-fdc4713d3ae6">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    "text": "[DATA LAKE] Arquivo inserido: " ++ vars.xPath default ""
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<http:request method="POST" doc:name="Request" doc:id="76364e1b-72af-4a1e-aa01-1f34e4e0c0a7" config-ref="HTTP_Request_configuration" path="/services/T3D7CDCNB/B01PHJBPX9T/h4NWOatSPZJDfXb5YKsq0KcK" />
+		<logger level="INFO" doc:name="Logger" doc:id="f0383235-3acd-44bf-a762-23ac8d3f8754" message='#["Arquivo inserido -&gt; " ++ vars.xPath]' />
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="02e04141-4f57-45e7-85f4-315dcc772e7c" >
+				<logger level="INFO" doc:name="Logger" doc:id="7efe6c64-eac4-4bf4-b285-ed29e1351ae4" message="#[error.cause]" />
+			</on-error-continue>
+		</error-handler>
+	</flow>
+	<flow name="ligacaoFlow" doc:id="3adb0e65-5e88-4418-b609-76856f0ff6bf" initialState="started">
+		<file:listener doc:name="On New or Updated File" doc:id="e2ef7995-f899-4e85-99f8-3c094f8e12d2" config-ref="File_Config" directory="../../../../transarq-api/src/main/resources/csv/recebido/shinobi/ligacao" moveToDirectory="../../../../transarq-api/src/main/resources/csv/processado/shinobi/ligacao">
+			<scheduling-strategy >
+				<fixed-frequency />
+			</scheduling-strategy>
+		</file:listener>
+		<set-variable value='#[if (attributes.path == null) "" else attributes.path]' doc:name="xPath" doc:id="1dd62511-80c9-4ced-abfd-5c360fe18924" variableName="xPath" />
+		<ee:transform doc:name="Transform Message" doc:id="820bfe41-d063-4bbe-8492-a1ae657c1b7b" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+import * from dw::core::Strings
+input payload application/csv header=true, separator=',', bodyStartLineNumber=0
+output application/json
+fun normDate(date) =  (date) replace "/" with "-"  replace "." with "-"
+---
+payload map (item, valor)->{ 
+	"CODIGO": item.CODIGO,
+	"OPERADOR": item.OPERADOR,
+	"NOME": item.NOME,
+	"CPFCNPJ": item.'CPF/CNPJ',
+	"TELEFONE1": item.'TELEFONE 1',
+	"TELEFONE2": item.'TELEFONE 2',
+	"TELEFONE3": item.'TELEFONE 3',
+	"TELEFONE4": item.'TELEFONE 4',
+	"TELEFONE5": item.'TELEFONE 5',
+	"CIDADE": item.CIDADE,
+	"UF": item.UF,
+	"REPRESENTANTE_LEGAL": item."REPRESENTANTE LEGAL",
+	"TIPO_ATENDIMENTO": item."TIPO DE ATENDIMENTO",
+	"MOTIVO_ATENDIMENTO": item."MOTIVO DE ATENDIMENTO",
+	"MAILING": item.MAILING,
+	"CAMPANHA": item.CAMPANHA,
+	
+	"DATA_CADASTRO": 
+    if (item."DATA DE CADASTRO"  == ""   ) null  else 
+    if (item."DATA DE CADASTRO"  == " "  ) null else 
+    if (item."DATA DE CADASTRO"  == null ) null else 
+    ( normDate(item."DATA DE CADASTRO") as Date {format: "dd-MM-yyyy"} as String {format:"yyyy-MM-dd"}),
+	
+	"HORA_CADASTRO": 
+	if (item."HORA DE CADASTRO"  == ""   ) null  else 
+    if (item."HORA DE CADASTRO"  == " "  ) null else 
+    if (item."HORA DE CADASTRO"  == null ) null else 
+    item."HORA DE CADASTRO",
+   
+	"DATA_CADASTRO_LEAD": 
+    if (item.DATA_CADASTRO_LEAD  == ""   ) null  else 
+    if (item.DATA_CADASTRO_LEAD  == " "  ) null else 
+    if (item.DATA_CADASTRO_LEAD  == null ) null else 
+    ( normDate(item.DATA_CADASTRO_LEAD) as Date {format: "dd-MM-yyyy HH:m:s"} as String {format:"yyyy-MM-dd"}) ++ " " ++
+    substringAfter(item.DATA_CADASTRO_LEAD, " ") ++ ".000",
+
+	"EVIDENCIA": item.EVIDENCIA,
+	"OBSERVACAO": item.OBSERVACAO,
+	"TIPO_AGENDAMENTO": item.TIPO_DE_AGENDAMENTO,
+    
+	"DATA_RETORNO":   
+    if (item.DATA_DE_RETORNO  == ""   ) null  else 
+    if (item.DATA_DE_RETORNO  == " "  ) null else 
+    if (item.DATA_DE_RETORNO  == null ) null else 
+    ( normDate(item.DATA_DE_RETORNO) as Date {format: "dd-MM-yyyy HH:mm"} as String {format:"yyyy-MM-dd"}) ++ " " ++
+    substringAfter(item.DATA_DE_RETORNO, " ") ++ ":00.000"
+
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<db:bulk-insert doc:name="Bulk insert" doc:id="5a737416-c6cd-4649-a384-232b6dc6ffef" config-ref="Database_Config">
+			<db:sql ><![CDATA[INSERT INTO atendimento (
+CODIGO,
+OPERADOR,
+NOME,
+CPFCNPJ,
+TELEFONE1,
+TELEFONE2,
+TELEFONE3,
+TELEFONE4,
+TELEFONE5,
+CIDADE,
+UF,
+REPRESENTANTE_LEGAL,
+TIPO_ATENDIMENTO,
+MOTIVO_ATENDIMENTO,
+MAILING,
+CAMPANHA,
+EVIDENCIA,
+OBSERVACAO,
+TIPO_AGENDAMENTO,
+DATA_CADASTRO,
+HORA_CADASTRO,
+DATA_CADASTRO_LEAD,
+DATA_RETORNO) 
+VALUES(
+:CODIGO,
+:OPERADOR,
+:NOME,
+:CPFCNPJ,
+:TELEFONE1,
+:TELEFONE2,
+:TELEFONE3,
+:TELEFONE4,
+:TELEFONE5,
+:CIDADE,
+:UF, 
+:REPRESENTANTE_LEGAL, 
+:TIPO_ATENDIMENTO , 
+:MOTIVO_ATENDIMENTO, 
+:MAILING, 
+:CAMPANHA, 
+:EVIDENCIA, 
+:OBSERVACAO, 
+:TIPO_AGENDAMENTO, 
+:DATA_CADASTRO, 
+:HORA_CADASTRO, 
+:DATA_CADASTRO_LEAD, 
+:DATA_RETORNO) ]]></db:sql>
+		</db:bulk-insert>
+		<ee:transform doc:name="Transform Message" doc:id="e89b8aa6-b496-4ab9-bf66-89d05585232d">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    "text": "[DATA LAKE] Arquivo inserido: " ++ vars.xPath default ""
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<http:request method="POST" doc:name="Request" doc:id="502ddb4c-d984-4134-9074-f8bf8680e29e" config-ref="HTTP_Request_configuration" path="/services/T3D7CDCNB/B01PHJBPX9T/h4NWOatSPZJDfXb5YKsq0KcK" />
+		<logger level="INFO" doc:name="Logger" doc:id="e141c74e-208f-4a6d-878a-bf7445b3678d" message='#["Arquivo inserido -&gt; " ++ vars.xPath]' />
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="Error Continue" doc:id="d167f28c-cdb3-4630-b6bb-12f557ebd340" >
+				<logger level="INFO" doc:name="Logger" doc:id="a8fcf662-861e-45a7-af6f-44923deb491a" message="#[error.cause]" />
+			</on-error-continue>
+		</error-handler>
+	</flow>
+</mule>

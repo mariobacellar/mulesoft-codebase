@@ -1,0 +1,28 @@
+#%RAML 1.0
+types:
+  body:
+    type: object
+title: API Transarq
+baseUri: /transarq
+description: Upload arquivos CSV para  Data Lake do Grupo Macro
+mediaType:
+  - application/json
+protocols:
+  - HTTPS
+  - HTTP
+/csv:
+  post:
+    displayName: Upload arquivos CSV
+    body:
+      text/csv:
+        fileTypes:
+          - "*/*"
+    responses:
+      "200":
+        body:
+          application/json:
+            example:
+              strict: true
+              value:
+                processamento: O Grup Macro agradece
+            type: object

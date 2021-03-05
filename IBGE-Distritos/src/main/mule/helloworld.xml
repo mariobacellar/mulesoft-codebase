@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="c21ceebe-0903-4213-87ae-ebec7467aa6c" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="cb3109a6-960a-4551-bc84-da41155c6d1a" >
+		<http:request-connection host="servicodados.ibge.gov.br" port="80" />
+	</http:request-config>
+	<flow name="helloworldFlow" doc:id="c8d4f14c-602d-45d1-bb1c-4b6436c24197" >
+		<http:listener doc:name="Listener" doc:id="cae263af-fe6f-468a-959c-a48fee231069" config-ref="HTTP_Listener_config" path="/ibge-distritos"/>
+		<set-variable value="#[attributes.requestPath]" doc:name="Set Variable" doc:id="4fd0af6f-9cb5-4ae2-bdd7-28064342e27b" variableName="parID"/>
+		<http:request method="GET" doc:name="Request" doc:id="c7e0a77c-9e59-46cc-b974-3b1a4c92521a" config-ref="HTTP_Request_configuration" path="/api/v1/localidades/distritos"/>
+	</flow>
+</mule>

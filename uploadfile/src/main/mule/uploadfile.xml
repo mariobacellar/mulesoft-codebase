@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:mongo="http://www.mulesoft.org/schema/mule/mongo" xmlns:xml-module="http://www.mulesoft.org/schema/mule/xml-module"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/xml-module http://www.mulesoft.org/schema/mule/xml-module/current/mule-xml-module.xsd
+http://www.mulesoft.org/schema/mule/mongo http://www.mulesoft.org/schema/mule/mongo/current/mule-mongo.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="da0dab4c-1c14-484d-a9ae-154db3b0d14f" >
+		<http:listener-connection host="0.0.0.0" port="8082" />
+	</http:listener-config>
+	<file:config name="File_Config" doc:name="File Config" doc:id="0aa59814-252b-45b4-93ff-52c89a888b28" >
+		<file:connection workingDir="/home/mario/Downloads/tableau/csv/atendimento" >
+			<reconnection failsDeployment="true" >
+				<reconnect />
+			</reconnection>
+		</file:connection>
+	</file:config>
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="9aae9ade-fed9-483e-8981-08fcc0f306b9" >
+		<http:request-connection host="hooks.slack.com" protocol="HTTPS"/>
+	</http:request-config>
+	<flow name="uploadfileFlow" doc:id="8c521a9b-638f-4eec-b275-cc2e17c35eca" >
+		<http:listener doc:name="/POST Upload" doc:id="a75b7b5c-9aed-4731-834a-6c8600667d68" config-ref="HTTP_Listener_config" path="/uploadFile" allowedMethods="POST" outputEncoding="UTF-8" outputMimeType="application/octet-stream">
+			<ee:repeatable-file-store-stream inMemorySize="1024" />
+		</http:listener>
+		<logger level="INFO" doc:name="Logger" doc:id="9da3cd6c-161a-423d-a61e-e9d5e0f0657f" message="#[payload]" />
+		<set-variable value="#[attributes.headers.'nome-arquivo']" doc:name="xfilenameIN" doc:id="d0ae779a-4454-4f67-b560-02cde3f40fdf" variableName="xfilenameIN"/>
+		<set-variable value='#["/home/mario/Downloads/tableau/csv/atendimento/input/"++ now() as String {format: "yyyyMMdd_hhms_"} ++ vars.xfilenameIN]' doc:name="xfilenameOUT" doc:id="571f3713-723c-4bf1-830b-6cf6bfd7585b" variableName="xfilenameOUT" />
+		<file:write doc:name="Write Output File" doc:id="116bef92-e140-4ccc-90b1-7d7bb7c3a7f7" config-ref="File_Config" path="#[vars.xfilenameOUT]">
+		</file:write>
+		<ee:transform doc:name="Transform Message" doc:id="022b7c9f-08a0-48ee-ad44-4dcd98587911">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    "text": "Arquivo CSV inserido no Datalake: " ++ vars.xfilenameOUT
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<http:request method="POST" doc:name="Request" doc:id="922a65fc-e448-4cb7-9dc9-76a6a69023d6" config-ref="HTTP_Request_configuration" path="/services/T3D7CDCNB/B01PHJBPX9T/h4NWOatSPZJDfXb5YKsq0KcK" outputMimeType="application/json"/>
+		<set-payload doc:name="Set Payload" doc:id="49b881f0-3caa-4a29-b3b7-1277cf03426d" value='#["O Grupo Macro Agradece (" ++ vars.xfilenameIN ++ ")"]'/>
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="1bcde804-8d33-4848-b864-326a487b4ff8" >
+				<logger level="INFO" doc:name="Logger" doc:id="c243b822-809a-4505-aa2f-d92d5691c523" message="#[payload]"/>
+			</on-error-continue>
+		</error-handler>
+	</flow>
+</mule>

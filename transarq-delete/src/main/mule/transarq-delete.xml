@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<file:config name="File_Config" doc:name="File Config" doc:id="55aad099-b3d3-4898-b977-fec9cc92114d" >
+		<file:connection workingDir="/home/mario/app/AnypointStudio/studio-workspace/transarq-delete/src/main/resources" />
+	</file:config>
+	<flow name="Delete-CSV-ProcessadoFlow" doc:id="8fed74df-bef1-4396-9e61-a57a8d4c218f" initialState="started">
+		<scheduler doc:name="Scheduler" doc:id="ee5ba9f6-d31a-4890-a9ef-44fe38a9763c" >
+			<scheduling-strategy >
+				<fixed-frequency />
+			</scheduling-strategy>
+		</scheduler>
+		<try doc:name="Try" doc:id="12033d2f-ee28-4f60-9dd0-a78f6891ec34">
+			<file:list doc:name="List Atendimento" doc:id="08a98bb7-3fdb-4f36-ae3f-849c31eb9174" config-ref="File_Config" directoryPath="../../../../transarq-api/src/main/resources/csv/processado/shinobi/atendimento" />
+			<set-variable value="#[%dw 2.0&#10;output application/java&#10;---&#10;payload.attributes.path]" doc:name="xListFilesAtendimento" doc:id="1bd01fc2-5d0f-4d26-83ba-144fed073ac7" variableName="xListFilesAtendimento" />
+			<file:list doc:name="List Vendas" doc:id="b5247f18-058d-46ba-ad9f-6298996c3277" config-ref="File_Config" directoryPath="../../../../transarq-api/src/main/resources/csv/processado/shinobi/venda" />
+			<set-variable value="#[%dw 2.0&#10;output application/java&#10;---&#10;payload.attributes.path]" doc:name="xListFilesVenda" doc:id="73c963a1-01aa-46cf-82bc-308f5f386091" variableName="xListFilesVenda" />
+			<file:list doc:name="List Ligacao" doc:id="79443ff2-7e39-4eb2-9c49-cf0586d2ce30" config-ref="File_Config" directoryPath="../../../../transarq-api/src/main/resources/csv/processado/shinobi/ligacao" />
+			<set-variable value="#[%dw 2.0&#10;output application/java&#10;---&#10;payload.attributes.path]" doc:name="xListFilesLigacao" doc:id="bf47fe08-9d91-4489-b032-31da4cbdccd7" variableName="xListFilesLigacao" />
+			<choice doc:name="Choice" doc:id="38e3bd0b-6bf1-496f-a220-c6e715a7aa2e">
+						<when expression="#[vars.xListFilesAtendimento != null]">
+							<foreach doc:name="For Each Delete CSV Shinobi Atendimento" doc:id="3b010aaf-0077-413c-a2e8-f0c4ed63198e" collection="#[vars.xListFilesAtendimento]">
+						<set-variable value="#[payload]" doc:name="xCurrFileNameAtendimento" doc:id="ee19a03a-ee82-416c-982a-449809e51de6" variableName="xCurrFileNameAtendimento" />
+						<file:delete doc:name="Delete CSV Shinobi Atendimento" doc:id="21cd05cc-12ed-403c-86ba-aa5131458727" config-ref="File_Config" path="#[vars.xCurrFileNameAtendimento]" />
+						<logger level="INFO" doc:name="Logger" doc:id="709d0c6a-3b54-4ee3-8b34-969eeedc70f8" message='#["Arquivo apagado  ["++ vars.xCurrFileNameAtendimento ++ "]"]' />
+					</foreach>
+						</when>
+						<when expression="#[vars.xListFilesVenda != null]">
+							<foreach doc:name="For Each Delete CSV Shinobi Venda" doc:id="c54e0f36-d1f2-4051-924a-64014ce26501" collection="#[vars.xListFilesVenda]">
+						<set-variable value="#[payload]" doc:name="xCurrFileNameVenda" doc:id="c88d6809-259f-4257-a780-f8e881a73a4d" variableName="xCurrFileNameVenda" />
+						<file:delete doc:name="Delete CSV Shinobi Venda" doc:id="82bffc67-7b86-4ccf-8147-c06ddcd5e6b2" config-ref="File_Config" path="#[vars.xCurrFileNameVenda]" />
+						<logger level="INFO" doc:name="Logger" doc:id="6405d98a-7714-4a32-b8f5-c5c67cc5cf07" message='#["Arquivo apagado  ["++ vars.xCurrFileNameVenda ++"]"]' />
+					</foreach>
+						</when>
+						<when expression="#[vars.xListFilesLigacao !=null]">
+							<foreach doc:name="For Each Delete CSV Shinobi Ligacao" doc:id="6651ef75-9fdb-4379-b9d9-431484b901f6" collection="#[vars.xListFilesLigacao]">
+						<set-variable value="#[payload]" doc:name="xCurrFileNameLigacao" doc:id="16afdfa7-6bfb-4cce-bfbf-b540caddfde5" variableName="xCurrFileNameLigacao" />
+						<file:delete doc:name="Delete CSV Shinobi Ligacao" doc:id="0a590722-2eb4-4db1-bf72-0082fcaf7e40" config-ref="File_Config" path="#[vars.xCurrFileNameLigacao]" />
+						<logger level="INFO" doc:name="Logger" doc:id="e292bb28-1e31-4dee-9643-67e83a6c16c0" message='#["Arquivo apagado  ["++ vars.xCurrFileNameLigacao ++"]"]' />
+					</foreach>
+						</when>
+						<otherwise>
+							<logger level="INFO" doc:name="Logger" doc:id="9993efb5-56e9-4302-b1d9-d3881671213c" message="Sem CSV para DELETAR" />
+						</otherwise>
+					</choice>
+			<error-handler >
+				<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="95b9b206-b4c3-4c79-9624-c0d88fa37dd2" type="ANY">
+					<logger level="INFO" doc:name="Logger" doc:id="aeb3774d-a3db-4f8d-8789-7d92ca0d7d70" message="#[error.cause]"/>
+				</on-error-continue>
+			</error-handler>
+		</try>
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="76731598-77c0-464c-8ad3-5b0d3921464d" >
+				<logger level="INFO" doc:name="Logger" doc:id="6a0e8426-780f-4bb1-837d-a95d074e5cb4" message="#[error.cause]"/>
+			</on-error-continue>
+		</error-handler>
+	</flow>
+	<flow name="transarq-deleteFlow" doc:id="1386c710-43e6-4c33-ba7e-188a15dc35dd" >
+		<logger level="INFO" doc:name="Logger" doc:id="11512f65-3944-42be-a2cd-ee94ec3d57d0" />
+	</flow>
+</mule>

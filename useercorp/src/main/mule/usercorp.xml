@@ -1,0 +1,379 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:amqp="http://www.mulesoft.org/schema/mule/amqp" xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns:slack="http://www.mulesoft.org/schema/mule/slack" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:mongo="http://www.mulesoft.org/schema/mule/mongo" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/mongo http://www.mulesoft.org/schema/mule/mongo/current/mule-mongo.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/slack http://www.mulesoft.org/schema/mule/slack/current/mule-slack.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/amqp http://www.mulesoft.org/schema/mule/amqp/current/mule-amqp.xsd">
+    <http:listener-config name="usercorp-httpListenerConfig">
+        <http:listener-connection host="0.0.0.0" port="8081" />
+    </http:listener-config>
+    <apikit:config name="usercorp-config" api="usercorp.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="2653e48c-80b2-464e-ad46-c5256af1796b">
+        <http:request-connection host="jsonplaceholder.typicode.com" />
+    </http:request-config>
+    <mongo:config name="MongoDB_Config" doc:name="MongoDB Config" doc:id="787476e0-cfe8-4c31-9b75-ec59bc769560">
+        <mongo:connection-string-connection connectionString="mongodb+srv://admin:admin@cluster0.rv6nl.mongodb.net/mule?retryWrites=true&amp;w=majority" />
+    </mongo:config>
+    <file:config name="File_Config_Today" doc:name="File Config" doc:id="c0d10407-8477-4fd1-bca1-ec0b479b1060" >
+		<file:connection workingDir="/home/mario/app/AnypointStudio/studio-workspace/useercorp/src/main/resources/files/today" />
+	</file:config>
+	<file:config name="File_Config_Uploaded" doc:name="File Config" doc:id="b64ffa18-ae31-4f94-8569-7a2e89db524b" >
+		<file:connection workingDir="/home/mario/app/AnypointStudio/studio-workspace/useercorp/src/main/resources/files/uploaded" />
+	</file:config>
+	<file:config name="File_Config_Files" doc:name="File Config" doc:id="1be72442-9228-4349-aa86-a3a9fcd98623" >
+		<file:connection workingDir="/home/mario/app/AnypointStudio/studio-workspace/useercorp/src/main/resources/files" />
+	</file:config>
+	<http:request-config name="HTTP_Request_Slack" doc:name="HTTP Request configuration" doc:id="357a3329-d51f-4226-958b-62567b81c33a">
+		<http:request-connection host="hooks.slack.com" protocol="HTTPS"/>
+	</http:request-config>
+	<os:object-store name="Object_store" doc:name="Object store" doc:id="8417f341-655b-45b1-b631-cece78f0dba7" entryTtl="14400" expirationInterval="3600"/>
+	<amqp:config name="AMQP_Config" doc:name="AMQP Config" doc:id="34eddf01-87cc-4a3d-8ab9-06bf1835cee9" >
+		<amqp:connection host="172.17.0.2" port="5672" password="guest" />
+	</amqp:config>
+	<flow name="usercorp-main">
+        <http:listener config-ref="usercorp-httpListenerConfig" path="/api/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body><![CDATA[#[payload]]]></http:body>
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="usercorp-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:BAD_REQUEST">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Bad request"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Method not allowed"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">405</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not acceptable"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">406</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Unsupported media type"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">415</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not Implemented"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">501</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="usercorp-console">
+        <http:listener config-ref="usercorp-httpListenerConfig" path="/console/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:console config-ref="usercorp-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="get:\userall:usercorp-config">
+        <flow-ref doc:name="Call Outer Users" doc:id="73ed8709-55ac-4666-a91d-2717de6bf53e" name="get:\userouter:usercorp-config" />
+        <set-variable value='#[%dw 2.0&#10;output application/json&#10;---&#10;payload map{&#10;	id: $.id,&#10;	"name": $.name,&#10;	"email": $.email,&#10;	"phone": $.phone,&#10;	"cpf": $.cpf,&#10;	"expirationDate": $.expirationDate&#10;}]' doc:name="myOuterUsers" doc:id="a9870ea1-5659-4581-a3ff-10bf12b89f98" variableName="myOuterUsers" />
+        <mongo:find-documents collectionName="user" doc:name="Find All Inner Users" doc:id="7b0092e5-d403-4b37-9a51-bfda10c50b63" config-ref="MongoDB_Config" fields="_id, name, username, email, phone, cpf, expirationDate">
+            <mongo:query><![CDATA[{}]]></mongo:query>
+        </mongo:find-documents>
+        <set-variable value='#[%dw 2.0&#10;output application/json&#10;---&#10;payload map{&#10;	"_id": $."_id",&#10;	"name": $.name,&#10;	"email": $.email,&#10;	"phone": $.phone,&#10;	"cpf": $.cpf,&#10;	"expirationDate": $.expirationDate&#10;}]' doc:name="myInnerUsers" doc:id="a02329d1-b0cd-4520-9bfc-57d4261d733f" variableName="myInnerUsers" />
+        <ee:transform doc:name="Transform Message" doc:id="ab3ab925-d32b-4a48-9e0a-04844972653d">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+var inner = (vars.myInnerUsers map{
+	"_id": $."_id",
+	name:$.name,
+	email:$.email,
+	phone: $.phone,
+	"cpf": $.cpf,
+    "expirationDate": $.expirationDate
+    })
+
+var outer = (vars.myOuterUsers map{
+	"id": {"\$oid":$.id},
+    name:$.name,
+    email:$.email,
+    phone: $.phone,
+	"cpf": null,
+    "expirationDate": now() as Date
+    })
+
+output application/json
+---
+[ inner, outer ] flatMap (value, index) -> value
+
+/*%dw 2.0
+output application/json
+---
+UserAll: [ 	
+	UserInner: (vars.varInnerUsers map{
+	name:$.name,
+	email:$.email,
+	phone: $.phone
+})
+,
+	UserOuter: (vars.varOuterUsers map{
+    name:$.name,
+    email:$.email,
+    phone: $.phone
+})
+]
+ */]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\userinner:usercorp-config">
+        <set-variable value="#[attributes.queryParams.id]" doc:name="myId" doc:id="f1e12821-fb52-4ef2-9abe-a75ce463e865" variableName="myUserId" />
+		<logger level="INFO" doc:name="Logger" doc:id="823a3849-b5b4-4856-9564-a3939ae60403"/>
+		<choice doc:name="Choice" doc:id="2b765e31-9815-428a-8267-aaa4dff26148" >
+			<when expression="#[vars.myUserId !=null]">
+				<mongo:find-documents collectionName="user" doc:name="Find documents" doc:id="52e22fd1-24b3-41be-a1f9-48847d001b5f" config-ref="MongoDB_Config" fields="name, email, phone">
+            <repeatable-in-memory-iterable />
+			<mongo:query><![CDATA[#[var myid = vars.myUserId
+output application/json
+---
+if ( myid !=null) 
+{
+ "_id" : {"\$oid" :  myid }
+}
+else
+{ }]]]></mongo:query>
+        </mongo:find-documents>
+			</when>
+			<otherwise >
+				<mongo:find-documents collectionName="user" fields="name, email, phone" doc:name="Find All" doc:id="dfc2ab0e-d33e-4f51-92d8-a7796170501a" config-ref="MongoDB_Config">
+					<repeatable-in-memory-iterable />
+				</mongo:find-documents>
+			</otherwise>
+		</choice>
+		<ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\userinner\today:usercorp-config">
+		<file:list doc:name="List Files Today" doc:id="465e992a-fcc7-4739-83d5-28612fa563af" config-ref="File_Config_Files" directoryPath="/home/mario/app/AnypointStudio/studio-workspace/useercorp/src/main/resources/files/today"/>
+		<ee:transform doc:name="Transform Message" doc:id="54542f43-fbaf-4f56-8131-12503b191433">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+payload.attributes.path
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<set-variable value="#[payload]" doc:name="myListFiles" doc:id="bb10c794-5bc3-4c2b-ae5e-48f840a37802" variableName="myListFiles" />
+		<set-variable value="#[[]]" doc:name="myFilesContents" doc:id="961c2a8d-29b9-4016-94e1-e1980357134e" variableName="myFilesContents" />
+		<os:store doc:name="Store myFilesContentsKey" doc:id="37977221-26d3-442d-91cd-5de38065a434" key="myFilesContentsKey">
+			<os:value><![CDATA[#[vars.myFilesContents]]]></os:value>
+		</os:store>
+		<set-variable value="#[[]]" doc:name="myFailuresContent" doc:id="09d9bb83-ab42-4bd7-815b-3d8c4496d660" variableName="myFailuresContent" />
+		<os:store doc:name="Store myFailuresContentKey" doc:id="792d51c1-d657-45bc-b08e-8904e197bb28" key="myFailuresContentKey">
+			<os:value><![CDATA[#[vars.myFailuresContent]]]></os:value>
+		</os:store>
+		<set-variable value='#[""]' doc:name="myCurrFileName" doc:id="774239ec-b2f6-40f5-bf5e-eeef2c68af81" variableName="myCurrFileName" />
+		<foreach doc:name="For Each" doc:id="060d8130-39fd-4c8e-9b4b-1c128971b5f3" collection="#[vars.myListFiles]">
+			<try doc:name="Try" doc:id="a5607bd5-f7c4-45ed-8524-6931a40c7a9e">
+				<set-variable value="#[payload]" doc:name="myCurrFileName" doc:id="7ebddcc3-89d9-484f-b692-af0c46e40196" variableName="myCurrFileName" />
+				<os:store doc:id="f0bc0d1e-20b2-416f-b503-4ef83f2254c1" key="myCurrFileNameKey" doc:name="Store myCurrFileName" objectStore="Object_store">
+					<os:value ><![CDATA[#[vars.myCurrFileName]]]></os:value>
+				</os:store>
+				<file:read doc:name="Read" doc:id="59b000f4-b332-4ed7-a1b3-ee407d57f08e" path="#[payload]" config-ref="File_Config_Today">
+				</file:read>
+				<ee:transform doc:name="Transform Message" doc:id="7eb806dd-eb92-45ae-85a3-8384fda81b99" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<set-variable value="#[%dw 2.0
+output application/json
+---
+vars.myFilesContents + payload]" doc:name="myFilesContents" doc:id="3619932f-49e9-41e9-9f3d-bebaffe33d70" variableName="myFilesContents"/>
+				<error-handler doc:id="120bba96-67aa-41ae-8fe4-558788d83c3f">
+					<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="e21f660b-d289-48e9-a1be-99c2839aa15a">
+						<os:retrieve doc:name="Retrieve myCurrFileNameKey" doc:id="7c5943f5-9668-4980-b827-36a94c9d175c" key="myCurrFileNameKey" objectStore="Object_store"/>
+						<set-variable value='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  "msg": "Arquivo corrompido: " ++ payload&#10;}]' doc:name="myTmpPayload" doc:id="ddc4109a-3057-495e-83e5-749e7fbe17c0" variableName="myTmpPayload" />
+						<os:retrieve doc:name="Retrieve myFailuresContentKey" doc:id="0651ec30-3b6d-4ef1-a4de-76b4128c1ce1" key="myFailuresContentKey"/>
+						<set-variable value="#[%dw 2.0&#10;output application/json&#10;---&#10;payload + vars.myTmpPayload]" doc:name="myFilesContents" doc:id="0fdfc253-353b-4473-b7e7-9be6f970cec2" variableName="myFailures" />
+						<os:store doc:name="Store myFilesContentsKey" doc:id="ee0505cc-144d-455d-b1c0-d688c4b0e264" key="myFailuresContentKey" >
+							<os:value ><![CDATA[#[vars.myFilesContents]]]></os:value>
+						</os:store>
+					</on-error-continue>
+				</error-handler>
+			</try>
+		</foreach>
+		<ee:transform doc:name="Transform Message" doc:id="420d4ab6-881d-45a0-8514-819b18b85cdf" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	ListOfFileNames: payload,
+	FilesSucess: vars.myFilesContents,
+	FilesCorrupted: vars.myFailures
+	 
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<set-payload value="#[payload]" doc:name=" Set Payload" doc:id="77875801-f2ed-48cf-8fc1-c4292a8d7347" />
+    </flow>
+	<flow name="get:\userouter:usercorp-config">
+        <http:request method="GET" doc:name="Request for outer users" doc:id="c43638b1-ff53-429d-bcc4-d7a76797454a" config-ref="HTTP_Request_configuration" path="/users" sendCorrelationId="NEVER" />
+        <ee:transform doc:name="Transform Message" doc:id="7434a2e9-197b-4bf0-90d9-f414c6762b64">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="post:\userinner:application\json:usercorp-config">
+		<try doc:name="Try" doc:id="e147431f-1ad9-4772-ac41-342d3583ea10" >
+			<mongo:insert-document doc:name="Insert UserInner" doc:id="e3ed9086-fd3b-4ce3-a129-9ef3f80bad4b" config-ref="MongoDB_Config" collectionName="user" />
+			<set-payload doc:name="Set Payload" doc:id="fe00cb44-b627-494b-9d23-69ad6a4079e6" value='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"return":{&#10;		"codigo":"200",&#10;		"msg": "Usuário inserido no banco de dados com sucesso." &#10;	}&#10;}]' />
+			<error-handler >
+				<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="7f0fb067-7f83-444f-aca9-659a3d4fe39b" >
+					<set-payload value='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"return":{&#10;		"codigo":"500",&#10;		"msg": "Erro tentnado inserir Usuário no banco de dados." &#10;	}&#10;}]' doc:name="Set Payload" doc:id="d5f897cf-58fc-41f2-9b5d-16927621a76d" />
+				</on-error-continue>
+			</error-handler>
+		</try>
+    </flow>
+	<flow name="post:\userinner\load:multipart\form-data:usercorp-config">
+        <logger level="INFO" doc:name="Logger" doc:id="a7b3bd91-6c86-45cc-abcf-881f1ab3df23" message="#[attributes.headers.'content-type']"/>
+		<set-variable value="#[payload]" doc:name="myPayloadInit" doc:id="95e34cff-7c1b-4423-b2ce-7944cb64df28" variableName="myPayloadInit"/>
+		<ee:transform doc:name="Transform Message" doc:id="e9445a60-46db-4ab6-aff9-7e0c79ec9630" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<set-variable value="#[payload.parts.myfile.headers.'Content-Type' == 'application/xml']" doc:name="isXML" doc:id="e42adedf-546b-4c23-969c-fd588bf2da17" variableName="isXML" />
+        <set-variable value="#[payload.parts.myfile.headers.'Content-Type' == 'text/csv']" doc:name="isCSV" doc:id="40154141-a4b3-4715-a551-706cca4742bc" variableName="isCSV"/>
+		<choice doc:name="Choice" doc:id="4478f465-36bd-4fc5-908d-2e198962b6b0">
+            <when expression="#[vars.isXML]">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/xml
+---
+vars.myPayloadInit]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+				<file:write doc:name="Write XML Local" doc:id="6b5cc72a-9217-44b0-8048-77bfc599f067" config-ref="File_Config_Uploaded" path='#["./uploaded/XML_" ++ now() as String {format: "y-MM-dd"} ++ "_"++ now() as String {format: "hhms"} ++ ".xml"]'/>
+            </when>
+            <when expression="#[vars.isCSV]">
+				<ee:transform doc:name="Transform CSV Message" doc:id="b1a346fd-100d-4986-a3b8-beba03422c7e" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload.parts.myfile.content  ]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+				<file:write doc:name="Write CSV Local" doc:id="698af808-471c-4da7-a99b-f9aeb3ce8375" config-ref="File_Config_Uploaded" path='#["./uploaded/CSV_" ++ now() as String {format: "y-MM-dd"} ++ "_"++ now() as String {format: "hhms"} ++ ".csv"]' />
+			</when>
+			<otherwise>
+				<ee:transform doc:name="Transform Message" doc:id="cbdd73d7-8cd8-42f4-af4e-2dea5f1932cc">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	'msg':'arquivo invalido'
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+            </otherwise>
+        </choice>
+		<logger level="INFO" doc:name="Logger" doc:id="7c4e39bd-a0b5-4686-af1e-a791b66b8dba" message="#[payload]" />
+    </flow>
+</mule>
